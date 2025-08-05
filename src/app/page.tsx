@@ -131,15 +131,7 @@ export default function HomePage() {
           </Button>
         </div>
 
-        {/* Debug Links - يمكن إزالتها لاحقاً */}
-        <div className="mt-8 text-center">
-          <div className="flex justify-center space-x-4 space-x-reverse text-sm">
-            <a href="/diagnose" className="text-blue-600 hover:underline">صفحة التشخيص</a>
-            <a href="/static" className="text-blue-600 hover:underline">الصفحة الثابتة</a>
-            <a href="/debug" className="text-blue-600 hover:underline">صفحة Debug</a>
-            <a href="/simple" className="text-blue-600 hover:underline">الصفحة البسيطة</a>
-          </div>
-        </div>
+
       </main>
     </div>
   );
