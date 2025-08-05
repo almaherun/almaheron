@@ -24,7 +24,8 @@ const publicPaths = [
   '/debug',
   '/diagnose',
   '/static',
-  '/landing'
+  '/landing',
+  '/simple'
 ];
 
 // تم استبدال Rate limiting store بنظام محسن في enhanced-rate-limit.ts
@@ -71,43 +72,13 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
-  // التحقق من وجود JWT_SECRET
-  if (!process.env.JWT_SECRET) {
-    console.error('JWT_SECRET is not configured');
-    return new NextResponse('Server configuration error', { status: 500 });
-  }
-  
-  // تطبيق Enhanced Rate Limiting
-  const rateLimitResult = enhancedRateLimit(request, pathname);
-  
-  if (!rateLimitResult.allowed) {
-    const retryAfter = Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000);
-    
-    return new NextResponse(
-      JSON.stringify({ 
-        error: rateLimitResult.blocked ? 'IP temporarily blocked due to excessive requests' : 'Too many requests',
-        retryAfter: retryAfter,
-        resetTime: rateLimitResult.resetTime
-      }), 
-      { 
-        status: 429,
-        headers: {
-          'Content-Type': 'application/json',
-          'Retry-After': retryAfter.toString(),
-          'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': rateLimitResult.resetTime.toString()
-        }
-      }
-    );
-  }
 
-  // السماح بالمسارات العامة
+  // السماح بالمسارات العامة بدون أي تعقيدات
   if (isPublicPath(pathname)) {
-    const response = addSecurityHeaders(NextResponse.next());
-    // إضافة rate limit headers
-    response.headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
-    response.headers.set('X-RateLimit-Reset', rateLimitResult.resetTime.toString());
+    const response = NextResponse.next();
+    // إضافة headers أمنية بسيطة فقط
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-Content-Type-Options', 'nosniff');
     return response;
   }
 
@@ -136,14 +107,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    // إضافة معلومات المستخدم والـ rate limit للـ headers
+    // إضافة معلومات المستخدم للـ headers
     const response = NextResponse.next();
     response.headers.set('x-user-id', payload.uid as string);
     response.headers.set('x-user-role', userRole);
-    response.headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
-    response.headers.set('X-RateLimit-Reset', rateLimitResult.resetTime.toString());
-    
-    return addSecurityHeaders(response);
+
+    return response;
     
   } catch (error) {
     // تسجيل آمن للأخطاء
@@ -154,8 +123,8 @@ export async function middleware(request: NextRequest) {
     // حذف الـ token المعطوب وإعادة توجيه
     const response = NextResponse.redirect(new URL('/auth', request.url));
     response.cookies.delete('session-token');
-    
-    return addSecurityHeaders(response);
+
+    return response;
   }
 }
 
