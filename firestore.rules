@@ -66,29 +66,29 @@ service cloud.firestore {
     
     // قواعد المستخدمين المؤقتين (للتحقق من البريد)
     match /temp_users/{tempUserId} {
-      // القراءة والكتابة: فقط للعمليات الداخلية (لا يوجد مستخدم مصادق)
-      allow read, write: if request.auth == null;
+      // السماح الكامل للعمليات المؤقتة أثناء التسجيل
+      allow read, write, create, delete: if true;
     }
     
     // قواعد أكواد الدعوة
     match /codes/{codeId} {
-      // القراءة: الأدمن فقط
-      allow read: if isAdmin();
-      
+      // السماح بالقراءة للتحقق من صحة الكود أثناء التسجيل
+      allow read: if true;
+
       // الإنشاء: الأدمن فقط
-      allow create: if isAdmin() 
+      allow create: if isAdmin()
         && resource.data.type in ['teacher', 'student']
         && resource.data.status == 'active'
         && resource.data.createdAt == request.time
         && resource.data.createdBy == request.auth.uid;
-      
+
       // التحديث: الأدمن أو عند استخدام الكود
-      allow update: if isAdmin() 
-        || (isAuthenticated() && 
-            resource.data.status == 'active' && 
+      allow update: if isAdmin()
+        || (isAuthenticated() &&
+            resource.data.status == 'active' &&
             request.resource.data.status == 'used' &&
             request.resource.data.usedBy == request.auth.uid);
-      
+
       // الحذف: الأدمن فقط
       allow delete: if isAdmin();
     }

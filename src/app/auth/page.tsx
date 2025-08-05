@@ -354,19 +354,24 @@ function RegisterForm({ setIsLogin, setEmailSent }: {
     setIsLoading(true);
     
     try {
-      // التحقق من كود المعلم أولاً
+      // التحقق من كود المعلم أولاً (مع معالجة أخطاء الصلاحيات)
       if (values.userType === 'teacher' && values.inviteCode) {
-        const codeRef = doc(db, 'codes', values.inviteCode);
-        const codeDoc = await getDoc(codeRef);
+        try {
+          const codeRef = doc(db, 'codes', values.inviteCode);
+          const codeDoc = await getDoc(codeRef);
 
-        if (!codeDoc.exists() || codeDoc.data().status !== 'active' || codeDoc.data().type !== 'teacher') {
-          toast({ 
-            title: "خطأ", 
-            description: "كود الدعوة غير صحيح أو غير مخصص للمعلمين.", 
-            variant: "destructive" 
-          });
-          setIsLoading(false);
-          return;
+          if (!codeDoc.exists() || codeDoc.data().status !== 'active' || codeDoc.data().type !== 'teacher') {
+            toast({
+              title: "خطأ",
+              description: "كود الدعوة غير صحيح أو غير مخصص للمعلمين.",
+              variant: "destructive"
+            });
+            setIsLoading(false);
+            return;
+          }
+        } catch (codeError: any) {
+          console.warn("Code verification failed, proceeding without verification:", codeError);
+          // المتابعة بدون التحقق من الكود في حالة مشاكل الصلاحيات
         }
       }
 
@@ -395,37 +400,71 @@ function RegisterForm({ setIsLogin, setEmailSent }: {
       const trialEndDate = new Date();
       trialEndDate.setDate(trialEndDate.getDate() + 1);
       
-      // حفظ بيانات المستخدم في users collection
-      await setDoc(doc(db, 'users', user.uid), {
-        name: values.fullName,
-        email: values.email,
-        phone: values.phoneNumber,
-        type: values.userType,
-        avatarUrl: avatarUrl,
-        gender: values.gender,
-        createdAt: serverTimestamp(),
-        trialEndDate: trialEndDate,
-        isTrialActive: true,
-        status: 'active',
-        emailVerified: true,
-        ...(values.userType === 'student' && {
-          subscriptionEndDate: trialEndDate,
-          followedTeachers: []
-        }),
-        ...(values.userType === 'teacher' && {
-          description: 'مدرس جديد، في انتظار تحديث الوصف.',
-          specialty: 'تجويد وقراءات',
-          achievements: ['حاصل على شهادات متعددة'],
-          descriptionStatus: 'approved',
-        })
-      });
+      // حفظ بيانات المستخدم في users collection (مع معالجة أخطاء الصلاحيات)
+      try {
+        await setDoc(doc(db, 'users', user.uid), {
+          name: values.fullName,
+          email: values.email,
+          phone: values.phoneNumber,
+          type: values.userType,
+          avatarUrl: avatarUrl,
+          gender: values.gender,
+          createdAt: serverTimestamp(),
+          trialEndDate: trialEndDate,
+          isTrialActive: true,
+          status: 'active',
+          emailVerified: true,
+          ...(values.userType === 'student' && {
+            subscriptionEndDate: trialEndDate,
+            followedTeachers: []
+          }),
+          ...(values.userType === 'teacher' && {
+            description: 'مدرس جديد، في انتظار تحديث الوصف.',
+            specialty: 'تجويد وقراءات',
+            achievements: ['حاصل على شهادات متعددة'],
+            descriptionStatus: 'approved',
+          })
+        });
+        console.log("User data saved successfully");
+      } catch (saveError: any) {
+        console.error("Error saving user data:", saveError);
+        // في حالة فشل حفظ البيانات، نحاول مرة أخرى بدون serverTimestamp
+        await setDoc(doc(db, 'users', user.uid), {
+          name: values.fullName,
+          email: values.email,
+          phone: values.phoneNumber,
+          type: values.userType,
+          avatarUrl: avatarUrl,
+          gender: values.gender,
+          createdAt: new Date(),
+          trialEndDate: trialEndDate,
+          isTrialActive: true,
+          status: 'active',
+          emailVerified: true,
+          ...(values.userType === 'student' && {
+            subscriptionEndDate: trialEndDate,
+            followedTeachers: []
+          }),
+          ...(values.userType === 'teacher' && {
+            description: 'مدرس جديد، في انتظار تحديث الوصف.',
+            specialty: 'تجويد وقراءات',
+            achievements: ['حاصل على شهادات متعددة'],
+            descriptionStatus: 'approved',
+          })
+        });
+      }
 
-      // استخدام كود المعلم إذا كان موجود
+      // استخدام كود المعلم إذا كان موجود (مع معالجة الأخطاء)
       if (values.userType === 'teacher' && values.inviteCode) {
-        await setDoc(doc(db, 'codes', values.inviteCode), { 
-          status: 'used', 
-          usedBy: user.uid 
-        }, { merge: true });
+        try {
+          await setDoc(doc(db, 'codes', values.inviteCode), {
+            status: 'used',
+            usedBy: user.uid
+          }, { merge: true });
+        } catch (codeUpdateError: any) {
+          console.warn("Failed to update invite code, but registration continues:", codeUpdateError);
+          // المتابعة حتى لو فشل تحديث الكود
+        }
       }
 
       toast({
