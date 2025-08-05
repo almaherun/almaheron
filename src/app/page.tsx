@@ -75,15 +75,15 @@ export default function HomePage() {
 
               {/* Desktop Auth Buttons */}
               <div className="hidden md:flex space-x-2 space-x-reverse">
-                <button 
-                  onClick={() => router.push('/auth')}
+                <button
+                  onClick={() => router.push('/auth?mode=login')}
                   className="px-4 py-2 rounded-md font-bold transition-all hover:transform hover:-translate-y-1"
                   style={{ backgroundColor: '#60A3BC', color: '#0A3D62' }}
                 >
                   تسجيل الدخول
                 </button>
-                <button 
-                  onClick={() => router.push('/auth')}
+                <button
+                  onClick={() => router.push('/auth?mode=register')}
                   className="px-4 py-2 rounded-md font-bold transition-all hover:transform hover:-translate-y-1"
                   style={{ backgroundColor: '#60A3BC', color: '#0A3D62' }}
                 >
@@ -121,15 +121,15 @@ export default function HomePage() {
             </ul>
             
             <div className="mt-8 space-y-3">
-              <button 
-                onClick={() => { router.push('/auth'); closeSidebar(); }}
+              <button
+                onClick={() => { router.push('/auth?mode=login'); closeSidebar(); }}
                 className="w-full py-3 px-4 rounded-md font-bold text-center"
                 style={{ backgroundColor: '#60A3BC', color: '#0A3D62' }}
               >
                 تسجيل الدخول
               </button>
-              <button 
-                onClick={() => { router.push('/auth'); closeSidebar(); }}
+              <button
+                onClick={() => { router.push('/auth?mode=register'); closeSidebar(); }}
                 className="w-full py-3 px-4 rounded-md font-bold text-center"
                 style={{ backgroundColor: '#60A3BC', color: '#0A3D62' }}
               >
@@ -164,14 +164,14 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col md:flex-row gap-4 justify-center">
               <button
-                onClick={() => router.push('/auth')}
+                onClick={() => router.push('/auth?mode=register')}
                 className="px-6 py-3 md:px-8 md:py-4 rounded-lg font-bold text-base md:text-lg transition-all hover:transform hover:-translate-y-1"
                 style={{ backgroundColor: '#60A3BC', color: '#0A3D62' }}
               >
                 ابدأ الآن مجاناً
               </button>
               <button
-                onClick={() => router.push('/auth')}
+                onClick={() => router.push('/auth?mode=login')}
                 className="px-6 py-3 md:px-8 md:py-4 rounded-lg font-bold text-base md:text-lg transition-all hover:transform hover:-translate-y-1"
                 style={{ backgroundColor: '#60A3BC', color: '#0A3D62' }}
               >
@@ -265,20 +265,13 @@ export default function HomePage() {
           <div className="max-w-4xl mx-auto px-6">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">هل أنت مستعد لبدء رحلتك القرآنية؟</h2>
             <p className="text-xl mb-8">انضم إلى آلاف الطلاب الذين بدؤوا رحلتهم معنا. سجل الآن وابدأ في تحفيظ القرآن الكريم.</p>
-            <div className="flex flex-col md:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <button
-                onClick={() => router.push('/auth')}
+                onClick={() => router.push('/auth?mode=register')}
                 className="px-6 py-3 md:px-10 md:py-4 rounded-lg font-bold text-lg md:text-xl transition-all hover:transform hover:-translate-y-1"
                 style={{ backgroundColor: '#60A3BC', color: '#0A3D62' }}
               >
                 سجل مجاناً
-              </button>
-              <button
-                onClick={() => router.push('/auth')}
-                className="px-6 py-3 md:px-10 md:py-4 rounded-lg font-bold text-lg md:text-xl transition-all hover:transform hover:-translate-y-1"
-                style={{ backgroundColor: '#60A3BC', color: '#0A3D62' }}
-              >
-                تواصل معنا
               </button>
             </div>
           </div>

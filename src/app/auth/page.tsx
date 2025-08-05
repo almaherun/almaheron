@@ -60,6 +60,17 @@ export default function AuthPage() {
   // const { user, userData, loading } = useAuth(); // تم تعطيله مؤقتاً
   const router = useRouter();
 
+  // Check URL parameters to determine mode
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    if (mode === 'login') {
+      setIsLogin(true);
+    } else if (mode === 'register') {
+      setIsLogin(false);
+    }
+  }, []);
+
   // تم تعطيل إعادة التوجيه التلقائي مؤقتاً
   // useEffect(() => {
   //   if (!loading && user && userData) {
@@ -93,16 +104,16 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex" style={{fontFamily: 'Cairo, sans-serif'}}>
+    <div className="min-h-screen flex" style={{fontFamily: 'Cairo, sans-serif', backgroundColor: '#F5F6FA'}}>
       {/* Left side - Form */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="mx-auto w-full max-w-md">
-          <div className="text-center">
-            <Image src="/image/logo.png" alt="Academy logo" width={48} height={48} className="mx-auto" />
-            <h2 className="mt-6 text-3xl font-bold tracking-tight text-gray-900">
+          <div className="text-center mb-6 md:mb-8">
+            <Image src="/image/logo.png" alt="Academy logo" width={48} height={48} className="mx-auto mb-4 md:mb-6" />
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight" style={{ color: '#0A3D62' }}>
               {isLogin ? 'تسجيل الدخول' : 'إنشاء حساب جديد'}
             </h2>
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-sm md:text-base" style={{ color: '#3C6382' }}>
               {isLogin ? 'إلى حسابك في أكاديمية الماهرون' : 'انضم إلى أكاديمية الماهرون'}
             </p>
           </div>
@@ -126,34 +137,28 @@ export default function AuthPage() {
           style={{ objectFit: 'cover' }}
           className="z-0"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/80 to-blue-800/80 z-10">
-        أكاديمية الماهرون
-
-منصة تعليمية متخصصة في تحفيظ وتجويد القرآن الكريم
-معلمون مجازون ومتخصصون
-دروس تفاعلية مباشرة
-متابعة شخصية لتقدمك
-شهادات معتمدة  <div className="absolute inset-0 bg-black/20 z-20"></div>
+        <div className="absolute inset-0 z-10" style={{ background: 'linear-gradient(135deg, #0A3D62CC 0%, #3C6382CC 100%)' }}>
+          <div className="absolute inset-0 bg-black/20 z-20"></div>
           <div className="relative z-30 h-full flex flex-col justify-center items-center text-white p-12">
             <div className="text-center space-y-8">
               <h1 className="text-4xl font-bold">أكاديمية الماهرون</h1>
               <p className="text-xl opacity-90">منصة تعليمية متخصصة في تحفيظ وتجويد القرآن الكريم</p>
-              
+
               <div className="space-y-4 text-right">
                 <div className="flex items-center justify-center space-x-3 space-x-reverse">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#60A3BC' }}></div>
                   <span>معلمون مجازون ومتخصصون</span>
                 </div>
                 <div className="flex items-center justify-center space-x-3 space-x-reverse">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#60A3BC' }}></div>
                   <span>دروس تفاعلية مباشرة</span>
                 </div>
                 <div className="flex items-center justify-center space-x-3 space-x-reverse">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#60A3BC' }}></div>
                   <span>متابعة شخصية لتقدمك</span>
                 </div>
                 <div className="flex items-center justify-center space-x-3 space-x-reverse">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#60A3BC' }}></div>
                   <span>شهادات معتمدة</span>
                 </div>
               </div>
@@ -307,12 +312,13 @@ function LoginForm({ setIsLogin }: { setIsLogin: (value: boolean) => void }) {
           )}
         </Button>
 
-        <div className="text-center">
+        <div className="text-center mt-6 md:mt-4">
           <span className="text-sm text-gray-600">ليس لديك حساب؟ </span>
           <button
             type="button"
             onClick={() => setIsLogin(false)}
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
+            className="text-sm font-medium hover:underline"
+            style={{ color: '#0A3D62' }}
           >
             إنشاء حساب
           </button>
@@ -716,12 +722,13 @@ function RegisterForm({ setIsLogin, setEmailSent }: {
           )}
         </Button>
 
-        <div className="text-center">
+        <div className="text-center mt-6 md:mt-4">
           <span className="text-sm text-gray-600">لديك حساب بالفعل؟ </span>
           <button
             type="button"
             onClick={() => setIsLogin(true)}
-            className="text-sm font-medium text-blue-600 hover:text-blue-500"
+            className="text-sm font-medium hover:underline"
+            style={{ color: '#0A3D62' }}
           >
             تسجيل الدخول
           </button>
