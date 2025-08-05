@@ -1,0 +1,202 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions للتحقق من الصلاحيات
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && getUserData().type == 'admin';
+    }
+    
+    function isTeacher() {
+      return isAuthenticated() && getUserData().type == 'teacher';
+    }
+    
+    function isStudent() {
+      return isAuthenticated() && getUserData().type == 'student';
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isValidUserType(type) {
+      return type in ['admin', 'teacher', 'student'];
+    }
+    
+    function isValidEmail(email) {
+      return email.matches('.*@.*\\..*');
+    }
+    
+    // قواعد مجموعة المستخدمين
+    match /users/{userId} {
+      // القراءة: المستخدم نفسه أو الأدمن
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // الإنشاء: فقط عند التسجيل (بيانات صحيحة)
+      allow create: if isOwner(userId) 
+        && isValidUserType(resource.data.type)
+        && isValidEmail(resource.data.email)
+        && resource.data.name is string
+        && resource.data.name.size() > 0
+        && resource.data.phone is string
+        && resource.data.createdAt == request.time;
+      
+      // التحديث: المستخدم نفسه (حقول محددة) أو الأدمن
+      allow update: if (isOwner(userId) && 
+        // المستخدم يمكنه تحديث هذه الحقول فقط
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['name', 'phone', 'avatarUrl', 'description', 'specialty', 'achievements']))
+        || (isAdmin() && 
+        // الأدمن يمكنه تحديث حقول إضافية
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['name', 'phone', 'avatarUrl', 'status', 'type', 'trialEndDate', 'subscriptionEndDate', 'descriptionStatus']));
+      
+      // الحذف: الأدمن فقط
+      allow delete: if isAdmin();
+    }
+    
+    // قواعد المستخدمين المؤقتين (للتحقق من البريد)
+    match /temp_users/{tempUserId} {
+      // القراءة والكتابة: فقط للعمليات الداخلية (لا يوجد مستخدم مصادق)
+      allow read, write: if request.auth == null;
+    }
+    
+    // قواعد أكواد الدعوة
+    match /codes/{codeId} {
+      // القراءة: الأدمن فقط
+      allow read: if isAdmin();
+      
+      // الإنشاء: الأدمن فقط
+      allow create: if isAdmin() 
+        && resource.data.type in ['teacher', 'student']
+        && resource.data.status == 'active'
+        && resource.data.createdAt == request.time
+        && resource.data.createdBy == request.auth.uid;
+      
+      // التحديث: الأدمن أو عند استخدام الكود
+      allow update: if isAdmin() 
+        || (isAuthenticated() && 
+            resource.data.status == 'active' && 
+            request.resource.data.status == 'used' &&
+            request.resource.data.usedBy == request.auth.uid);
+      
+      // الحذف: الأدمن فقط
+      allow delete: if isAdmin();
+    }
+    
+    // قواعد الجلسات التعليمية
+    match /sessions/{sessionId} {
+      // القراءة: المعلم المالك أو الطلاب المشتركين أو الأدمن
+      allow read: if isAdmin() 
+        || (isTeacher() && resource.data.teacherId == request.auth.uid)
+        || (isStudent() && request.auth.uid in resource.data.students);
+      
+      // الإنشاء: المعلم فقط
+      allow create: if isTeacher() 
+        && resource.data.teacherId == request.auth.uid
+        && resource.data.createdAt == request.time;
+      
+      // التحديث: المعلم المالك فقط
+      allow update: if isTeacher() 
+        && resource.data.teacherId == request.auth.uid;
+      
+      // الحذف: المعلم المالك أو الأدمن
+      allow delete: if isAdmin() 
+        || (isTeacher() && resource.data.teacherId == request.auth.uid);
+    }
+    
+    // قواعد المحتوى التعليمي
+    match /content/{contentId} {
+      // القراءة: جميع المستخدمين المصادقين
+      allow read: if isAuthenticated();
+      
+      // الإنشاء: المعلم أو الأدمن
+      allow create: if (isTeacher() || isAdmin()) 
+        && resource.data.createdBy == request.auth.uid
+        && resource.data.createdAt == request.time;
+      
+      // التحديث: المنشئ أو الأدمن
+      allow update: if isAdmin() 
+        || (isAuthenticated() && resource.data.createdBy == request.auth.uid);
+      
+      // الحذف: المنشئ أو الأدمن
+      allow delete: if isAdmin() 
+        || (isAuthenticated() && resource.data.createdBy == request.auth.uid);
+    }
+    
+    // قواعد الإشعارات
+    match /notifications/{notificationId} {
+      // القراءة: المستقبل فقط
+      allow read: if isAuthenticated() 
+        && resource.data.userId == request.auth.uid;
+      
+      // الإنشاء: الأدمن أو النظام
+      allow create: if isAdmin();
+      
+      // التحديث: المستقبل (لتحديث حالة القراءة) أو الأدمن
+      allow update: if (isAuthenticated() && 
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']))
+        || isAdmin();
+      
+      // الحذف: المستقبل أو الأدمن
+      allow delete: if isAdmin() 
+        || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+    
+    // قواعد التقييمات والمراجعات
+    match /reviews/{reviewId} {
+      // القراءة: جميع المستخدمين المصادقين
+      allow read: if isAuthenticated();
+      
+      // الإنشاء: الطلاب فقط
+      allow create: if isStudent() 
+        && resource.data.studentId == request.auth.uid
+        && resource.data.createdAt == request.time;
+      
+      // التحديث: الكاتب فقط
+      allow update: if isAuthenticated() 
+        && resource.data.studentId == request.auth.uid;
+      
+      // الحذف: الكاتب أو الأدمن
+      allow delete: if isAdmin() 
+        || (isAuthenticated() && resource.data.studentId == request.auth.uid);
+    }
+    
+    // قواعد الرسائل
+    match /messages/{messageId} {
+      // القراءة: المرسل أو المستقبل
+      allow read: if isAuthenticated() 
+        && (resource.data.senderId == request.auth.uid 
+            || resource.data.receiverId == request.auth.uid);
+      
+      // الإنشاء: المستخدمين المصادقين
+      allow create: if isAuthenticated() 
+        && resource.data.senderId == request.auth.uid
+        && resource.data.createdAt == request.time;
+      
+      // التحديث: المرسل فقط (لتحديث حالة القراءة)
+      allow update: if isAuthenticated() 
+        && resource.data.senderId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
+      
+      // الحذف: المرسل أو الأدمن
+      allow delete: if isAdmin() 
+        || (isAuthenticated() && resource.data.senderId == request.auth.uid);
+    }
+    
+    // منع الوصول لأي مجموعات أخرى
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

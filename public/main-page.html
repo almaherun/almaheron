@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الماهرون - تحفيظ القرآن الكريم أونلاين</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0A3D62; /* Dark Blue */
+            --secondary-color: #3C6382; /* Medium Blue */
+            --accent-color: #60A3BC;   /* Light Blue */
+            --light-color: #F5F6FA;   /* Off-white/Light Gray */
+            --dark-color: #2C3A47;    /* Very Dark Blue */
+            --text-color: #333;       /* Default text color */
+            --success-color: #78E08F; /* Green */
+
+            /* Fixed Light Theme Variables */
+            --bg-color: var(--light-color);
+            --text-color-main: var(--text-color);
+            --card-bg: white;
+            --border-color: #ddd;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color-main);
+            direction: rtl;
+            line-height: 1.6;
+            overflow-x: hidden; /* Prevent horizontal scroll when sidebar is open */
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+        }
+
+        .nav-links li {
+            margin-right: 1.5rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent-color);
+        }
+
+        .auth-buttons a {
+            background-color: var(--accent-color);
+            color: var(--primary-color);
+            padding: 0.6rem 1.2rem;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+            margin-right: 0.5rem; /* Added for spacing between buttons */
+        }
+
+        .auth-buttons a:last-child {
+            margin-right: 0;
+        }
+
+        .auth-buttons a:hover {
+            background-color: #4CAF50; /* A slightly darker green for hover */
+        }
+
+        /* --- Sidebar Specific Styles --- */
+        .hamburger-menu {
+            display: none; /* Hidden by default, visible on mobile */
+            font-size: 1.8rem;
+            color: white;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -250px; /* Initially off-screen to the left (RTL) */
+            width: 250px;
+            height: 100%;
+            background-color: var(--dark-color);
+            color: white;
+            padding: 2rem 1.5rem;
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3);
+            transition: right 0.3s ease-in-out;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: right; /* Align sidebar content to the right */
+        }
+
+        .sidebar.open {
+            right: 0; /* Slide in */
+        }
+
+        .sidebar-close-btn {
+            position: absolute;
+            top: 1rem;
+            left: 1rem; /* Positioning for RTL */
+            font-size: 2rem;
+            color: white;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .sidebar .nav-links {
+            flex-direction: column;
+            width: 100%;
+            margin-top: 2rem;
+        }
+
+        .sidebar .nav-links li {
+            margin: 0.75rem 0;
+            width: 100%;
+        }
+
+        .sidebar .nav-links a {
+            color: white;
+            padding: 0.75rem 1rem;
+            display: block;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar .nav-links a:hover {
+            background-color: var(--secondary-color);
+            border-radius: 5px;
+        }
+
+        .sidebar .auth-buttons {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            margin-top: 2rem;
+        }
+
+        .sidebar .auth-buttons a {
+            margin: 0.5rem 0;
+            text-align: center;
+            padding: 0.8rem 1.2rem;
+            width: 100%;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        /* --- End Sidebar Specific Styles --- */
+
+
+        .hero-section {
+            background: url('https://source.unsplash.com/random/1600x900?quran-book') no-repeat center center/cover;
+            color: white;
+            text-align: center;
+            padding: 8rem 0;
+            min-height: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .hero-content p {
+            font-size: 1.5rem;
+            margin-bottom: 2.5rem;
+            opacity: 0.9;
+        }
+
+        .hero-buttons a {
+            background-color: var(--accent-color);
+            color: var(--primary-color);
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: inline-block;
+            margin: 0 1rem;
+        }
+
+        .hero-buttons a:hover {
+            background-color: #4CAF50;
+            transform: translateY(-3px);
+        }
+
+        .features-section {
+            padding: 4rem 0;
+            text-align: center;
+            background-color: var(--light-color);
+        }
+
+        .features-section h2, .about-section h2, .contact-section h2 {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 3rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .features-section h2::after, .about-section h2::after, .contact-section h2::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: -10px;
+            width: 80px;
+            height: 4px;
+            background-color: var(--accent-color);
+            border-radius: 2px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: right;
+            border: 1px solid var(--border-color);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-card i {
+            font-size: 3rem;
+            color: var(--secondary-color);
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            font-size: 1rem;
+            color: var(--text-color);
+        }
+
+        .about-section {
+            background-color: white;
+            padding: 4rem 0;
+            text-align: center;
+        }
+
+        .about-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        @media (min-width: 768px) {
+            .about-content {
+                flex-direction: row;
+                text-align: right;
+            }
+        }
+
+        .about-text {
+            flex: 1;
+        }
+
+        .about-text p {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            color: var(--text-color);
+        }
+
+        .about-image {
+            flex: 1;
+            text-align: center;
+        }
+
+        .about-image img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            text-align: center;
+            padding: 4rem 0;
+        }
+
+        .cta-section h2 {
+            font-size: 2.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .cta-section p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+        }
+
+        .cta-buttons a {
+            background-color: var(--accent-color);
+            color: var(--primary-color);
+            padding: 1rem 2.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: inline-block;
+            margin: 0 1rem;
+        }
+
+        .cta-buttons a:hover {
+            background-color: #4CAF50;
+            transform: translateY(-3px);
+        }
+
+        .contact-section {
+            padding: 4rem 0;
+            text-align: center;
+            background-color: var(--light-color);
+        }
+
+        .contact-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        @media (min-width: 768px) {
+            .contact-content {
+                flex-direction: row;
+                justify-content: space-around;
+                text-align: right;
+            }
+        }
+
+        .contact-info {
+            flex: 1;
+            padding: 1.5rem;
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border-color);
+        }
+
+        .contact-info h3 {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-info ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .contact-info ul li {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.1rem;
+            color: var(--text-color);
+        }
+
+        .contact-info ul li i {
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+        }
+
+        .contact-info ul li a {
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        .contact-info ul li a:hover {
+            color: var(--secondary-color);
+            text-decoration: underline;
+        }
+
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 3rem 0 1rem 0;
+            text-align: center;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            text-align: right;
+        }
+
+        .footer-logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .footer-section h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+        }
+
+        .footer-section p, .footer-section ul {
+            font-size: 0.95rem;
+            color: #ccc;
+        }
+
+        .footer-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-section ul li a {
+            color: #ccc;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section ul li a:hover {
+            color: white;
+        }
+
+        .footer-section ul li i {
+            margin-left: 0.5rem;
+        }
+
+        .copyright {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 767px) {
+            .navbar {
+                flex-direction: row; /* Keep logo and hamburger on one line */
+                justify-content: space-between;
+            }
+            .nav-links, .auth-buttons {
+                display: none; /* Hide desktop nav and auth buttons on mobile */
+            }
+            .hamburger-menu {
+                display: block; /* Show hamburger menu on mobile */
+            }
+
+            .hero-content h1 {
+                font-size: 2.2rem; /* تقليل حجم النص */
+            }
+            .hero-content p {
+                font-size: 1rem; /* تقليل حجم النص */
+            }
+            .hero-buttons a {
+                margin: 0.5rem 0;
+                display: block; /* جعل الأزرار عمودية */
+                width: 100%; /* جعل الأزرار بعرض الشاشة */
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr; /* جعل الشبكة عمودية */
+                gap: 1.5rem; /* تقليل المسافات بين العناصر */
+            }
+
+            .about-content {
+                flex-direction: column; /* جعل المحتوى عموديًا */
+                text-align: center; /* توسيط النص */
+            }
+
+            .about-image img {
+                width: 100%; /* جعل الصورة بعرض الشاشة */
+                height: auto; /* الحفاظ على نسبة العرض إلى الارتفاع */
+            }
+
+            .contact-content {
+                flex-direction: column; /* جعل المحتوى عموديًا */
+                text-align: center; /* توسيط النص */
+            }
+
+            .contact-info {
+                margin-bottom: 1.5rem; /* إضافة مسافة بين العناصر */
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr; /* جعل الشبكة عمودية */
+                text-align: center; /* توسيط النص */
+            }
+
+            .footer-section ul {
+                display: flex;
+                flex-direction: column;
+                align-items: center; /* توسيط النص */
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav class="navbar">
+                <a href="#" class="logo">الماهرون</a>
+                <ul class="nav-links">
+                    <li><a href="#hero">الرئيسية</a></li>
+                    <li><a href="#features">المميزات</a></li>
+                    <li><a href="#about">من نحن</a></li>
+                    <li><a href="#contact">تواصل معنا</a></li>
+                </ul>
+                <div class="auth-buttons">
+                    <a href="/login">تسجيل الدخول</a>
+                    <a href="/register">إنشاء حساب</a>
+                </div>
+                <div class="hamburger-menu" id="hamburgerMenu">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="sidebar" id="mobileSidebar">
+        <button class="sidebar-close-btn" id="sidebarCloseBtn"><i class="fas fa-times"></i></button>
+        <ul class="nav-links">
+            <li><a href="#hero">الرئيسية</a></li>
+            <li><a href="#features">المميزات</a></li>
+            <li><a href="#about">من نحن</a></li>
+            <li><a href="#contact">تواصل معنا</a></li>
+        </ul>
+        <div class="auth-buttons">
+            <a href="/login">تسجيل الدخول</a>
+            <a href="/register">إنشاء حساب</a>
+        </div>
+    </div>
+
+    <div class="overlay" id="sidebarOverlay"></div>
+
+    <section id="hero" class="hero-section">
+        <div class="hero-overlay"></div>
+        <div class="hero-content container">
+            <h1>منصة الماهرون لتحفيظ القرآن الكريم أونلاين</h1>
+            <p>انضم إلينا لتبدأ رحلتك في حفظ وتجويد القرآن الكريم على يد معلمين متخصصين، في أي وقت ومن أي مكان.</p>
+            <div class="hero-buttons">
+                <a href="/register">ابدأ الآن مجاناً</a>
+                <a href="/login">تسجيل الدخول</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="features-section">
+        <div class="container">
+            <h2>مميزات منصة الماهرون</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <i class="fas fa-book-reader"></i>
+                    <h3>معلمون متخصصون</h3>
+                    <p>فريق من المعلمين والمعلمات المجازين في القراءات، لتقديم أفضل تجربة تعليمية.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-video"></i>
+                    <h3>حصص مباشرة</h3>
+                    <p>دروس تفاعلية عبر الفيديو والصوت، تضمن التجويد الصحيح والتصحيح الفوري.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-calendar-alt"></i>
+                    <h3>مرونة في المواعيد</h3>
+                    <p>اختر الأوقات التي تناسبك من جدول حصص مرن، ليتناسب مع حياتك اليومية.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>متابعة التقدم</h3>
+                    <p>نظام متكامل لمتابعة تقدمك في الحفظ والمراجعة، مع تقارير دورية.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>بيئة آمنة وداعمة</h3>
+                    <p>منصة مصممة لتوفير بيئة تعليمية إيجابية ومشجعة للجميع.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-globe"></i>
+                    <h3>من أي مكان في العالم</h3>
+                    <p>خدماتنا متاحة لجميع الطلاب في جميع أنحاء العالم، كل ما تحتاجه هو اتصال بالإنترنت.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="about-section">
+        <div class="container">
+            <h2>من نحن</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <p>في منصة الماهرون، نؤمن بأن تعلم القرآن الكريم يجب أن يكون متاحاً للجميع، بغض النظر عن موقعهم الجغرافي أو جدولهم الزمني. لذلك، قمنا ببناء هذه المنصة لتوفير تجربة تعليمية فريدة وميسرة لتحفيظ وتجويد كتاب الله.</p>
+                    <p>نحن نجمع بين أحدث التقنيات وأفضل الممارسات التعليمية لضمان جودة التعليم. فريقنا من المعلمين المجازين ملتزم بتوجيه كل طالب في رحلته الروحانية، بدءاً من المبتدئين وصولاً إلى الراغبين في إتقان القراءات.</p>
+                    <p>هدفنا هو تمكينك من الارتباط بالقرآن الكريم، فهمه، وتطبيقه في حياتك اليومية، وذلك من خلال منهج تعليمي مبني على التجويد، الفهم، والتطبيق.</p>
+                </div>
+                <div class="about-image">
+                    <img src="https://source.unsplash.com/random/600x400?muslim-student" alt="About Us">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <div class="container">
+            <h2>هل أنت مستعد لبدء رحلتك القرآنية؟</h2>
+            <p>انضم إلى آلاف الطلاب الذين بدؤوا رحلتهم معنا. سجل الآن وابدأ في تحفيظ القرآن الكريم.</p>
+            <div class="cta-buttons">
+                <a href="register.html">سجل مجاناً</a> <br>
+                <a href="contact.html">تواصل معنا</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="contact-section">
+        <div class="container">
+            <h2>تواصل معنا</h2>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <h3>معلومات الاتصال</h3>
+                    <ul>
+                        <li><i class="fas fa-map-marker-alt"></i> العنوان: القاهرة، مصر</li>
+                        <li><i class="fas fa-phone"></i> الهاتف: +20 123 456 7890</li>
+                        <li><i class="fas fa-envelope"></i> البريد الإلكتروني: info@almahirun.com</li>
+                    </ul>
+                </div>
+                <div class="contact-info">
+                    <h3>تابعنا على</h3>
+                    <ul>
+                        <li><a href="https://facebook.com/YOUR_PLATFORM_FACEBOOK_PAGE" target="_blank"><i class="fab fa-facebook"></i> فيسبوك</a></li>
+                        <li><a href="https://twitter.com/YOUR_PLATFORM_TWITTER_HANDLE" target="_blank"><i class="fab fa-twitter"></i> تويتر</a></li>
+                        <li><a href="https://instagram.com/YOUR_PLATFORM_INSTAGRAM_HANDLE" target="_blank"><i class="fab fa-instagram"></i> انستجرام</a></li>
+                        <li><a href="https://youtube.com/YOUR_PLATFORM_YOUTUBE_CHANNEL" target="_blank"><i class="fab fa-youtube"></i> يوتيوب</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="#" class="footer-logo">الماهرون</a>
+                    <p>منصة تعليمية متخصصة في تحفيظ وتجويد القرآن الكريم عبر الإنترنت، على يد معلمين ومعلمات مجازين.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>روابط سريعة</h3>
+                    <ul>
+                        <li><a href="#hero">الرئيسية</a></li>
+                        <li><a href="#features">المميزات</a></li>
+                        <li><a href="#about">من نحن</a></li>
+                        <li><a href="#contact">تواصل معنا</a></li>
+                        <li><a href="login.html">تسجيل الدخول</a></li>
+                        <li><a href="register.html">إنشاء حساب</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>تواصل مباشر</h3>
+                    <ul>
+                        <li><a href="mailto:info@almahirun.com"><i class="fas fa-envelope"></i> info@almahirun.com</a></li>
+                        <li><a href="https://wa.me/YOUR_PLATFORM_WHATSAPP_NUMBER" target="_blank"><i class="fab fa-whatsapp"></i> واتساب</a></li>
+                        <li><a href="https://t.me/YOUR_PLATFORM_TELEGRAM_USERNAME" target="_blank"><i class="fab fa-telegram"></i> تليجرام</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="copyright">
+                <p>جميع الحقوق محفوظة © 2023 منصة الماهرون لتحفيظ القرآن الكريم</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    const elementPosition = targetElement.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset; 
+
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Sidebar functionality
+        const hamburgerMenu = document.getElementById('hamburgerMenu');
+        const mobileSidebar = document.getElementById('mobileSidebar');
+        const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const sidebarLinks = document.querySelectorAll('#mobileSidebar .nav-links a, #mobileSidebar .auth-buttons a');
+
+        function openSidebar() {
+            mobileSidebar.classList.add('open');
+            sidebarOverlay.style.display = 'block';
+            document.body.style.overflow = 'hidden'; // Prevent scrolling background
+        }
+
+        function closeSidebar() {
+            mobileSidebar.classList.remove('open');
+            sidebarOverlay.style.display = 'none';
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+
+        hamburgerMenu.addEventListener('click', openSidebar);
+        sidebarCloseBtn.addEventListener('click', closeSidebar);
+        sidebarOverlay.addEventListener('click', closeSidebar); // Close sidebar when clicking outside
+
+        // Close sidebar when a link is clicked inside it
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', closeSidebar);
+        });
+
+        // وظيفة للتحقق من عرض الشاشة وإغلاق الشريط الجانبي على الشاشات الكبيرة
+        function checkScreenWidth() {
+            if (window.innerWidth >= 768) {
+                closeSidebar();
+            }
+        }
+
+        // تشغيل الوظيفة عند تحميل الصفحة وتغيير حجم الشاشة
+        window.addEventListener('load', checkScreenWidth);
+        window.addEventListener('resize', checkScreenWidth);
+    </script>
+</body>
+</html>
