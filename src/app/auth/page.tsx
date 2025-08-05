@@ -28,7 +28,7 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'fire
 import { doc, setDoc, getDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { sendVerificationCodeEmailJS } from '@/lib/emailjs';
-import { useAuth } from '@/contexts/AuthContext';
+// import { useAuth } from '@/contexts/AuthContext'; // تم تعطيله مؤقتاً
 
 const loginSchema = z.object({
   email: z.string().email({ message: "البريد الإلكتروني المدخل غير صحيح." }),
@@ -57,35 +57,36 @@ const registerSchema = z.object({
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [emailSent, setEmailSent] = useState(false);
-  const { user, userData, loading } = useAuth();
+  // const { user, userData, loading } = useAuth(); // تم تعطيله مؤقتاً
   const router = useRouter();
 
-  // إعادة توجيه المستخدم إذا كان مسجل دخول
-  useEffect(() => {
-    if (!loading && user && userData) {
-      switch (userData.type) {
-        case 'admin':
-          router.push('/admin/dashboard');
-          break;
-        case 'teacher':
-          router.push('/teacher/dashboard');
-          break;
-        case 'student':
-          router.push('/student/dashboard');
-          break;
-        default:
-          router.push('/');
-      }
-    }
-  }, [user, userData, loading, router]);
+  // تم تعطيل إعادة التوجيه التلقائي مؤقتاً
+  // useEffect(() => {
+  //   if (!loading && user && userData) {
+  //     switch (userData.type) {
+  //       case 'admin':
+  //         router.push('/admin/dashboard');
+  //         break;
+  //       case 'teacher':
+  //         router.push('/teacher/dashboard');
+  //         break;
+  //       case 'student':
+  //         router.push('/student/dashboard');
+  //         break;
+  //       default:
+  //         router.push('/');
+  //     }
+  //   }
+  // }, [user, userData, loading, router]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  // تم تعطيل loading screen مؤقتاً
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center">
+  //       <Loader2 className="h-8 w-8 animate-spin" />
+  //     </div>
+  //   );
+  // }
 
   if (emailSent) {
     return <EmailVerificationPage />;
