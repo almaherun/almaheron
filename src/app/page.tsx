@@ -163,16 +163,16 @@ export default function HomePage() {
               انضم إلينا لتبدأ رحلتك في حفظ وتجويد القرآن الكريم على يد معلمين متخصصين، في أي وقت ومن أي مكان.
             </p>
             <div className="flex flex-col md:flex-row gap-4 justify-center">
-              <button 
+              <button
                 onClick={() => router.push('/auth')}
-                className="px-8 py-4 rounded-lg font-bold text-lg transition-all hover:transform hover:-translate-y-1"
+                className="px-6 py-3 md:px-8 md:py-4 rounded-lg font-bold text-base md:text-lg transition-all hover:transform hover:-translate-y-1"
                 style={{ backgroundColor: '#60A3BC', color: '#0A3D62' }}
               >
                 ابدأ الآن مجاناً
               </button>
-              <button 
+              <button
                 onClick={() => router.push('/auth')}
-                className="px-8 py-4 rounded-lg font-bold text-lg transition-all hover:transform hover:-translate-y-1"
+                className="px-6 py-3 md:px-8 md:py-4 rounded-lg font-bold text-base md:text-lg transition-all hover:transform hover:-translate-y-1"
                 style={{ backgroundColor: '#60A3BC', color: '#0A3D62' }}
               >
                 تسجيل الدخول
@@ -189,41 +189,41 @@ export default function HomePage() {
               <div className="absolute left-1/2 transform -translate-x-1/2 -bottom-3 w-20 h-1 rounded" style={{ backgroundColor: '#60A3BC' }}></div>
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
-              <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-200 hover:transform hover:-translate-y-3 transition-all duration-300 text-right">
-                <i className="fas fa-book-reader text-5xl mb-4" style={{ color: '#3C6382' }}></i>
-                <h3 className="text-2xl font-semibold mb-3" style={{ color: '#0A3D62' }}>معلمون متخصصون</h3>
-                <p className="text-gray-700">فريق من المعلمين والمعلمات المجازين في القراءات، لتقديم أفضل تجربة تعليمية.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mt-8">
+              <div className="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-gray-200 hover:transform hover:-translate-y-3 transition-all duration-300 text-right">
+                <i className="fas fa-book-reader text-3xl md:text-5xl mb-3 md:mb-4" style={{ color: '#3C6382' }}></i>
+                <h3 className="text-lg md:text-2xl font-semibold mb-2 md:mb-3" style={{ color: '#0A3D62' }}>معلمون متخصصون</h3>
+                <p className="text-sm md:text-base text-gray-700">فريق من المعلمين والمعلمات المجازين في القراءات، لتقديم أفضل تجربة تعليمية.</p>
               </div>
 
-              <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-200 hover:transform hover:-translate-y-3 transition-all duration-300 text-right">
-                <i className="fas fa-video text-5xl mb-4" style={{ color: '#3C6382' }}></i>
-                <h3 className="text-2xl font-semibold mb-3" style={{ color: '#0A3D62' }}>حصص مباشرة</h3>
-                <p className="text-gray-700">دروس تفاعلية عبر الفيديو والصوت، تضمن التجويد الصحيح والتصحيح الفوري.</p>
+              <div className="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-gray-200 hover:transform hover:-translate-y-3 transition-all duration-300 text-right">
+                <i className="fas fa-video text-3xl md:text-5xl mb-3 md:mb-4" style={{ color: '#3C6382' }}></i>
+                <h3 className="text-lg md:text-2xl font-semibold mb-2 md:mb-3" style={{ color: '#0A3D62' }}>حصص مباشرة</h3>
+                <p className="text-sm md:text-base text-gray-700">دروس تفاعلية عبر الفيديو والصوت، تضمن التجويد الصحيح والتصحيح الفوري.</p>
               </div>
 
-              <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-200 hover:transform hover:-translate-y-3 transition-all duration-300 text-right">
-                <i className="fas fa-calendar-alt text-5xl mb-4" style={{ color: '#3C6382' }}></i>
-                <h3 className="text-2xl font-semibold mb-3" style={{ color: '#0A3D62' }}>مرونة في المواعيد</h3>
-                <p className="text-gray-700">اختر الأوقات التي تناسبك من جدول حصص مرن، ليتناسب مع حياتك اليومية.</p>
+              <div className="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-gray-200 hover:transform hover:-translate-y-3 transition-all duration-300 text-right">
+                <i className="fas fa-calendar-alt text-3xl md:text-5xl mb-3 md:mb-4" style={{ color: '#3C6382' }}></i>
+                <h3 className="text-lg md:text-2xl font-semibold mb-2 md:mb-3" style={{ color: '#0A3D62' }}>مرونة في المواعيد</h3>
+                <p className="text-sm md:text-base text-gray-700">اختر الأوقات التي تناسبك من جدول حصص مرن، ليتناسب مع حياتك اليومية.</p>
               </div>
 
-              <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-200 hover:transform hover:-translate-y-3 transition-all duration-300 text-right">
-                <i className="fas fa-chart-line text-5xl mb-4" style={{ color: '#3C6382' }}></i>
-                <h3 className="text-2xl font-semibold mb-3" style={{ color: '#0A3D62' }}>متابعة التقدم</h3>
-                <p className="text-gray-700">نظام متكامل لمتابعة تقدمك في الحفظ والمراجعة، مع تقارير دورية.</p>
+              <div className="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-gray-200 hover:transform hover:-translate-y-3 transition-all duration-300 text-right">
+                <i className="fas fa-chart-line text-3xl md:text-5xl mb-3 md:mb-4" style={{ color: '#3C6382' }}></i>
+                <h3 className="text-lg md:text-2xl font-semibold mb-2 md:mb-3" style={{ color: '#0A3D62' }}>متابعة التقدم</h3>
+                <p className="text-sm md:text-base text-gray-700">نظام متكامل لمتابعة تقدمك في الحفظ والمراجعة، مع تقارير دورية.</p>
               </div>
 
-              <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-200 hover:transform hover:-translate-y-3 transition-all duration-300 text-right">
-                <i className="fas fa-shield-alt text-5xl mb-4" style={{ color: '#3C6382' }}></i>
-                <h3 className="text-2xl font-semibold mb-3" style={{ color: '#0A3D62' }}>بيئة آمنة وداعمة</h3>
-                <p className="text-gray-700">منصة مصممة لتوفير بيئة تعليمية إيجابية ومشجعة للجميع.</p>
+              <div className="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-gray-200 hover:transform hover:-translate-y-3 transition-all duration-300 text-right">
+                <i className="fas fa-shield-alt text-3xl md:text-5xl mb-3 md:mb-4" style={{ color: '#3C6382' }}></i>
+                <h3 className="text-lg md:text-2xl font-semibold mb-2 md:mb-3" style={{ color: '#0A3D62' }}>بيئة آمنة وداعمة</h3>
+                <p className="text-sm md:text-base text-gray-700">منصة مصممة لتوفير بيئة تعليمية إيجابية ومشجعة للجميع.</p>
               </div>
 
-              <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-200 hover:transform hover:-translate-y-3 transition-all duration-300 text-right">
-                <i className="fas fa-globe text-5xl mb-4" style={{ color: '#3C6382' }}></i>
-                <h3 className="text-2xl font-semibold mb-3" style={{ color: '#0A3D62' }}>من أي مكان في العالم</h3>
-                <p className="text-gray-700">خدماتنا متاحة لجميع الطلاب في جميع أنحاء العالم، كل ما تحتاجه هو اتصال بالإنترنت.</p>
+              <div className="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-gray-200 hover:transform hover:-translate-y-3 transition-all duration-300 text-right">
+                <i className="fas fa-globe text-3xl md:text-5xl mb-3 md:mb-4" style={{ color: '#3C6382' }}></i>
+                <h3 className="text-lg md:text-2xl font-semibold mb-2 md:mb-3" style={{ color: '#0A3D62' }}>من أي مكان في العالم</h3>
+                <p className="text-sm md:text-base text-gray-700">خدماتنا متاحة لجميع الطلاب في جميع أنحاء العالم، كل ما تحتاجه هو اتصال بالإنترنت.</p>
               </div>
             </div>
           </div>
@@ -251,7 +251,7 @@ export default function HomePage() {
               </div>
               <div className="flex-1">
                 <img
-                  src="https://images.unsplash.com/photo-1544717297-fa95b6ee9643?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+                  src="/image/about-quran.jpg"
                   alt="About Us"
                   className="w-full h-auto rounded-xl shadow-xl"
                 />
@@ -268,14 +268,14 @@ export default function HomePage() {
             <div className="flex flex-col md:flex-row gap-4 justify-center">
               <button
                 onClick={() => router.push('/auth')}
-                className="px-10 py-4 rounded-lg font-bold text-xl transition-all hover:transform hover:-translate-y-1"
+                className="px-6 py-3 md:px-10 md:py-4 rounded-lg font-bold text-lg md:text-xl transition-all hover:transform hover:-translate-y-1"
                 style={{ backgroundColor: '#60A3BC', color: '#0A3D62' }}
               >
                 سجل مجاناً
               </button>
               <button
                 onClick={() => router.push('/auth')}
-                className="px-10 py-4 rounded-lg font-bold text-xl transition-all hover:transform hover:-translate-y-1"
+                className="px-6 py-3 md:px-10 md:py-4 rounded-lg font-bold text-lg md:text-xl transition-all hover:transform hover:-translate-y-1"
                 style={{ backgroundColor: '#60A3BC', color: '#0A3D62' }}
               >
                 تواصل معنا
@@ -298,15 +298,15 @@ export default function HomePage() {
                 <ul className="space-y-4 text-right">
                   <li className="flex items-center gap-3">
                     <i className="fas fa-map-marker-alt text-2xl" style={{ color: '#3C6382' }}></i>
-                    <span className="text-lg text-gray-700">العنوان: القاهرة، مصر</span>
+                    <span className="text-lg text-gray-700">العنوان: الفيوم، مصر</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <i className="fas fa-phone text-2xl" style={{ color: '#3C6382' }}></i>
-                    <span className="text-lg text-gray-700">الهاتف: +20 123 456 7890</span>
+                    <span className="text-lg text-gray-700">الهاتف: 01062084964</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <i className="fas fa-envelope text-2xl" style={{ color: '#3C6382' }}></i>
-                    <span className="text-lg text-gray-700">البريد الإلكتروني: info@almahirun.com</span>
+                    <span className="text-lg text-gray-700">البريد الإلكتروني: almahroun@gmail.com</span>
                   </li>
                 </ul>
               </div>
@@ -315,27 +315,15 @@ export default function HomePage() {
                 <h3 className="text-2xl font-bold mb-6" style={{ color: '#0A3D62' }}>تابعنا على</h3>
                 <ul className="space-y-4 text-right">
                   <li>
-                    <a href="#" className="flex items-center gap-3 text-gray-700 hover:text-[#3C6382] transition-colors">
+                    <a href="https://www.facebook.com/share/1BQKKmL9vf/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-700 hover:text-[#3C6382] transition-colors">
                       <i className="fab fa-facebook text-2xl"></i>
                       <span className="text-lg">فيسبوك</span>
                     </a>
                   </li>
                   <li>
-                    <a href="#" className="flex items-center gap-3 text-gray-700 hover:text-[#3C6382] transition-colors">
-                      <i className="fab fa-twitter text-2xl"></i>
-                      <span className="text-lg">تويتر</span>
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="flex items-center gap-3 text-gray-700 hover:text-[#3C6382] transition-colors">
-                      <i className="fab fa-instagram text-2xl"></i>
-                      <span className="text-lg">انستجرام</span>
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="flex items-center gap-3 text-gray-700 hover:text-[#3C6382] transition-colors">
-                      <i className="fab fa-youtube text-2xl"></i>
-                      <span className="text-lg">يوتيوب</span>
+                    <a href="https://t.me/Al_maheron" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-700 hover:text-[#3C6382] transition-colors">
+                      <i className="fab fa-telegram text-2xl"></i>
+                      <span className="text-lg">تليجرام</span>
                     </a>
                   </li>
                 </ul>
@@ -367,19 +355,19 @@ export default function HomePage() {
                 <h3 className="text-xl font-bold mb-4" style={{ color: '#60A3BC' }}>تواصل مباشر</h3>
                 <ul className="space-y-2">
                   <li>
-                    <a href="mailto:info@almahirun.com" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2">
+                    <a href="mailto:almahroun@gmail.com" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2">
                       <i className="fas fa-envelope"></i>
-                      <span>info@almahirun.com</span>
+                      <span>almahroun@gmail.com</span>
                     </a>
                   </li>
                   <li>
-                    <a href="#" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2">
+                    <a href="https://wa.me/201062084964" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2">
                       <i className="fab fa-whatsapp"></i>
                       <span>واتساب</span>
                     </a>
                   </li>
                   <li>
-                    <a href="#" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2">
+                    <a href="https://t.me/Al_maheron" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2">
                       <i className="fab fa-telegram"></i>
                       <span>تليجرام</span>
                     </a>
