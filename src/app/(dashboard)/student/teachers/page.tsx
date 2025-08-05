@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserData, UserData } from '@/hooks/useUser';
 import { collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp } from 'firebase/firestore';
 import VideoCall from '@/components/VideoCall';
+import { generateRoomId } from '@/lib/firebaseSignaling';
 
 
 const TeacherList = ({ teachers, isLoading, onStartCall, canCall }: { teachers: User[], isLoading: boolean, onStartCall: (teacher: User) => void, canCall: boolean }) => {
@@ -118,9 +119,7 @@ export default function TeachersPage() {
     
 
 
-    const generateRoomId = () => {
-        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    };
+    // generateRoomId is now imported from firebaseSignaling
 
     const startCall = async (teacher: User) => {
         if (!student) return;

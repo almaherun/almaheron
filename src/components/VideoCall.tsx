@@ -17,8 +17,8 @@ import MicOffIcon from '@mui/icons-material/MicOff';
 import CallEndIcon from '@mui/icons-material/CallEnd';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { useToast } from '@/hooks/use-toast';
-import { io, Socket } from 'socket.io-client';
 import SimplePeer from 'simple-peer';
+import { FirebaseSignaling, createSignaling } from '@/lib/firebaseSignaling';
 import '../styles/videocall.css';
 
 interface VideoCallProps {
@@ -41,7 +41,7 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const peerRef = useRef<SimplePeer.Instance | null>(null);
-  const socketRef = useRef<Socket | null>(null);
+  const signalingRef = useRef<FirebaseSignaling | null>(null);
   const remoteUserIdRef = useRef<string | null>(null);
 
   const { toast } = useToast();
@@ -75,54 +75,40 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
         localVideoRef.current.srcObject = stream;
       }
 
-      // Initialize Socket.io connection
-      socketRef.current = io();
+      // Initialize Firebase signaling
+      signalingRef.current = createSignaling(roomId, `user_${Date.now()}`, userName, userType);
 
-      // Join the room
-      socketRef.current.emit('join-room', {
-        roomId,
-        userName,
-        userType
-      });
+      // Set up event listeners
+      signalingRef.current.on('user-joined', (user) => {
+        console.log('User joined:', user);
+        setRemoteUserName(user.name);
 
-      // Handle socket events
-      socketRef.current.on('user-joined', (data) => {
-        console.log('User joined:', data);
-        setRemoteUserName(data.userName);
-
-        // Create peer connection as initiator
-        createPeer(data.userId, stream);
-      });
-
-      socketRef.current.on('room-users', (users) => {
-        console.log('Room users:', users);
-        if (users.length > 0) {
-          const remoteUser = users[0];
-          setRemoteUserName(remoteUser.userName);
-          remoteUserIdRef.current = remoteUser.userId;
+        // Create peer connection as initiator if we're the teacher or first user
+        if (userType === 'teacher' || !remoteUserIdRef.current) {
+          createPeer(user.id, stream);
         }
       });
 
-      socketRef.current.on('offer', (data) => {
+      signalingRef.current.on('offer', (data) => {
         console.log('Received offer from:', data.sender);
         handleOffer(data.offer, data.sender, stream);
       });
 
-      socketRef.current.on('answer', (data) => {
+      signalingRef.current.on('answer', (data) => {
         console.log('Received answer from:', data.sender);
         if (peerRef.current) {
           peerRef.current.signal(data.answer);
         }
       });
 
-      socketRef.current.on('ice-candidate', (data) => {
+      signalingRef.current.on('ice-candidate', (data) => {
         console.log('Received ICE candidate from:', data.sender);
         if (peerRef.current) {
           peerRef.current.signal(data.candidate);
         }
       });
 
-      socketRef.current.on('user-left', (data) => {
+      signalingRef.current.on('user-left', (data) => {
         console.log('User left:', data);
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = null;
@@ -134,12 +120,28 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
         }
       });
 
+      // Join the room
+      await signalingRef.current.joinRoom();
+
+      // Check for existing users
+      const existingUsers = await signalingRef.current.getRoomUsers();
+      if (existingUsers.length > 0) {
+        const remoteUser = existingUsers[0];
+        setRemoteUserName(remoteUser.name);
+        remoteUserIdRef.current = remoteUser.id;
+
+        // Create peer connection if we're joining an existing room
+        if (userType === 'student') {
+          createPeer(remoteUser.id, stream);
+        }
+      }
+
       setConnectionStatus('connected');
       setIsConnected(true);
 
       toast({
-        title: "تم الاتصال بالخادم",
-        description: "في انتظار المستخدم الآخر...",
+        title: "تم الاتصال بنجاح",
+        description: existingUsers.length > 0 ? "جاري الاتصال..." : "في انتظار المستخدم الآخر...",
         className: "bg-blue-600 text-white"
       });
 
@@ -162,10 +164,7 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
     });
 
     peer.on('signal', (signal) => {
-      socketRef.current?.emit('offer', {
-        target: remoteUserId,
-        offer: signal
-      });
+      signalingRef.current?.sendOffer(signal, remoteUserId);
     });
 
     peer.on('stream', (remoteStream) => {
@@ -196,10 +195,7 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
     });
 
     peer.on('signal', (signal) => {
-      socketRef.current?.emit('answer', {
-        target: senderId,
-        answer: signal
-      });
+      signalingRef.current?.sendAnswer(signal, senderId);
     });
 
     peer.on('stream', (remoteStream) => {
@@ -223,7 +219,7 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
     remoteUserIdRef.current = senderId;
   };
 
-  const cleanup = () => {
+  const cleanup = async () => {
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
     }
@@ -231,10 +227,9 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
       peerRef.current.destroy();
       peerRef.current = null;
     }
-    if (socketRef.current) {
-      socketRef.current.emit('leave-room');
-      socketRef.current.disconnect();
-      socketRef.current = null;
+    if (signalingRef.current) {
+      await signalingRef.current.leaveRoom();
+      signalingRef.current = null;
     }
   };
 
