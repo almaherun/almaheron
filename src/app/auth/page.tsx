@@ -370,9 +370,14 @@ function RegisterForm({ setIsLogin, setEmailSent }: {
         }
       }
 
+      // التحقق من وجود البريد الإلكتروني في قاعدة البيانات أولاً
+      console.log("Attempting to create user with email:", values.email);
+
       // إنشاء حساب Firebase Auth مباشرة (سيرمي خطأ إذا كان البريد مستخدماً)
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
+
+      console.log("User created successfully:", user.uid);
 
       // رفع الصورة
       let avatarUrl = '';
@@ -445,17 +450,25 @@ function RegisterForm({ setIsLogin, setEmailSent }: {
       }
     } catch (error: any) {
       console.error("Registration Error:", error);
-      
+      console.error("Error code:", error.code);
+      console.error("Error message:", error.message);
+
       let errorMessage = 'حدث خطأ غير متوقع.';
-      
+
       if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'هذا البريد الإلكتروني مستخدم بالفعل.';
+        errorMessage = 'هذا البريد الإلكتروني مستخدم بالفعل. جرب بريد إلكتروني آخر أو سجل الدخول.';
       } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'كلمة المرور ضعيفة<lemma.';
+        errorMessage = 'كلمة المرور ضعيفة. يجب أن تكون 6 أحرف على الأقل.';
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = 'البريد الإلكتروني غير صحيح.';
+      } else if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = 'التسجيل غير مسموح حالياً. تواصل مع الإدارة.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'تم تجاوز عدد المحاولات المسموحة. حاول مرة أخرى لاحقاً.';
+      } else {
+        errorMessage = `خطأ: ${error.message}`;
       }
-      
+
       toast({
         title: "خطأ في التسجيل",
         description: errorMessage,
