@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Check, LoaderCircle } from 'lucide-react';
+import { Search, Plus, Check, RotateCw } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -66,7 +66,7 @@ const TeacherList = ({ teachers, isLoading, onFollowToggle, student, followingIn
                             className="w-28"
                         >
                             {followingInProgress === teacher.uid ? (
-                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                                <RotateCw className="h-4 w-4 animate-spin" />
                             ) : isFollowing(teacher.uid) ? (
                                 <>
                                     <Check className="ml-1 h-4 w-4" />

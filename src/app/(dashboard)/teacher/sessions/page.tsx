@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mic, X, PlusCircle, LoaderCircle } from 'lucide-react';
+import { Mic, X, PlusCircle, RotateCw } from 'lucide-react';
 import {
     Table,
     TableHeader,
@@ -87,7 +87,7 @@ function CreateSessionForm({ onSessionCreated, setOpen, teacherId, teacherName, 
             </div>
             <DialogFooter>
                 <Button size="lg" onClick={handleSessionStart} disabled={isLoading}>
-                    {isLoading && <LoaderCircle className="ml-2 h-4 w-4 animate-spin" />}
+                    {isLoading && <RotateCw className="ml-2 h-4 w-4 animate-spin" />}
                     بدء الحلقة
                 </Button>
             </DialogFooter>
@@ -150,7 +150,7 @@ function ActiveSessionCard({ session, onSessionEnd }: { session: Session, onSess
             </div>
             <CardFooter className="p-4 bg-background">
                 <Button variant="destructive" size="lg" className="w-full text-lg" onClick={handleEndClick} disabled={isLoading}>
-                    {isLoading && <LoaderCircle className="ml-2 h-4 w-4 animate-spin" />}
+                    {isLoading && <RotateCw className="ml-2 h-4 w-4 animate-spin" />}
                     <X className="ml-2 h-5 w-5" />
                     إنهاء الحلقة
                 </Button>

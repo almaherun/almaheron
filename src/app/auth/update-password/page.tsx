@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { LoaderCircle, Eye, EyeOff } from "lucide-react";
+import { RotateCw, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { confirmPasswordReset } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -153,7 +153,7 @@ export default function UpdatePasswordPage() {
                 {error && <p className="text-sm font-medium text-destructive">{error}</p>}
               
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting && <LoaderCircle className="ml-2 h-4 w-4 animate-spin" />}
+                    {isSubmitting && <RotateCw className="ml-2 h-4 w-4 animate-spin" />}
                     {isSubmitting ? 'جاري التحديث...' : 'تحديث كلمة المرور'}
                 </Button>
             </form>

@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, BookCopy, ChartColumn, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Users, BookCopy, BarChart, Clock, CheckCircle, XCircle } from 'lucide-react';
 import {
     Table,
     TableHeader,
@@ -90,7 +90,7 @@ export default function TeacherDashboardPage() {
     const statCards = [
         { title: 'عدد المتابعين', value: stats?.followers ?? 0, icon: Users },
         { title: 'الحلقات هذا الأسبوع', value: stats?.sessionsThisWeek ?? 0, icon: BookCopy },
-        { title: 'إجمالي الحلقات', value: stats?.totalSessions ?? 0, icon: ChartColumn },
+        { title: 'إجمالي الحلقات', value: stats?.totalSessions ?? 0, icon: BarChart },
     ];
 
 

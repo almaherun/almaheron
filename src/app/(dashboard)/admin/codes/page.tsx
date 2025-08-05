@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, FileDown, MoreHorizontal, Copy, Trash2, LoaderCircle } from 'lucide-react';
+import { PlusCircle, FileDown, MoreHorizontal, Copy, Trash2, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -146,7 +146,7 @@ function AddCodeDialog({ onCodeAdded }: { onCodeAdded: () => void }) {
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
                     <Button onClick={handleAddCode} disabled={isLoading}>
-                        {isLoading && <LoaderCircle className="ml-2 h-4 w-4 animate-spin" />}
+                        {isLoading && <RotateCw className="ml-2 h-4 w-4 animate-spin" />}
                         إضافة
                     </Button>
                 </DialogFooter>
@@ -246,7 +246,7 @@ export default function CodesPage() {
                             {isLoading ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center">
-                                        <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-primary" />
+                                        <RotateCw className="mx-auto h-8 w-8 animate-spin text-primary" />
                                     </TableCell>
                                 </TableRow>
                             ) : codes.map((item) => (

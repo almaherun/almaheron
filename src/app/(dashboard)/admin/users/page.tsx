@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { MoreHorizontal, PlusCircle, Search, Trash2, Edit, Eye, UserX, LoaderCircle, Ticket, Camera, UserCheck, UserCog } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Search, Trash2, Edit, Eye, UserX, RotateCw, Ticket, Camera, UserCheck, UserCog } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -404,7 +404,7 @@ export default function UsersPage() {
     const isDisabling = userToToggleStatus?.status === 'active';
 
     if (loading) {
-        return <div className="flex justify-center items-center h-full"><LoaderCircle className="h-8 w-8 animate-spin" /></div>
+        return <div className="flex justify-center items-center h-full"><RotateCw className="h-8 w-8 animate-spin" /></div>
     }
 
     return (
