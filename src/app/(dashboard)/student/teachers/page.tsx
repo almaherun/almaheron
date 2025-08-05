@@ -54,6 +54,11 @@ const TeacherList = ({ teachers, isLoading, onStartCall, canCall }: { teachers: 
                             <div>
                                 <h3 className="font-semibold">{teacher.name}</h3>
                                 <p className="text-sm text-muted-foreground">{teacher.specialty}</p>
+                                {(teacher as any).hourlyRate && (
+                                    <p className="text-sm font-medium text-green-600">
+                                        {(teacher as any).hourlyRate} ريال/ساعة
+                                    </p>
+                                )}
                             </div>
                         </Link>
                         <Button

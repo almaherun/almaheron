@@ -17,9 +17,9 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 
 type Stats = {
-    followedTeachers: number;
-    sessionsThisWeek: number;
-    dailyAverage: string;
+    availableTeachers: number;
+    callsThisWeek: number;
+    totalCalls: number;
 }
 
 function ValidityCircle({ subscriptionEndDate }: { subscriptionEndDate?: any }) {
@@ -107,38 +107,54 @@ export default function StudentDashboardPage() {
     useEffect(() => {
         if (!student) {
             setIsLoading(false);
-            setStats({ followedTeachers: 0, sessionsThisWeek: 0, dailyAverage: '0' });
+            setStats({ availableTeachers: 0, callsThisWeek: 0, totalCalls: 0 });
             return;
         }
 
         // تحديث الإحصائيات الأساسية فوراً
-        const followedCount = student.followedTeachers?.length ?? 0;
-
-        if (followedCount === 0) {
-            setIsLoading(false);
-            setStats({ followedTeachers: 0, sessionsThisWeek: 0, dailyAverage: '0' });
-            setRecentSessions([]);
-            return;
-        }
+        setIsLoading(false);
 
         const unsubscribers: (() => void)[] = [];
 
-        // Set basic stats without complex queries
+        // Set basic stats for calls
         setStats({
-            followedTeachers: followedCount,
-            sessionsThisWeek: 0, // Will be updated with actual data later
-            dailyAverage: '0 ساعة'
+            availableTeachers: 0, // Will be updated with actual data
+            callsThisWeek: 0, // Will be updated with actual data
+            totalCalls: 0 // Will be updated with actual data
         });
 
+        // Load available teachers count
+        const teachersQuery = query(collection(db, 'users'), where('type', '==', 'teacher'));
+        const unsubTeachers = onSnapshot(teachersQuery, (snapshot) => {
+            setStats(prevStats => ({
+                availableTeachers: snapshot.size,
+                callsThisWeek: prevStats?.callsThisWeek || 0,
+                totalCalls: prevStats?.totalCalls || 0
+            }));
+        });
+        unsubscribers.push(unsubTeachers);
+
+        // Load call statistics
+        const callsQuery = query(collection(db, 'call_sessions'), where('studentId', '==', student.id));
+        const unsubCalls = onSnapshot(callsQuery, (snapshot) => {
+            const calls = snapshot.docs.map(doc => doc.data());
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+
+            const callsThisWeek = calls.filter(call => {
+                const callDate = call.createdAt?.toDate() || new Date(0);
+                return callDate >= weekAgo;
+            }).length;
+
+            setStats(prevStats => ({
+                availableTeachers: prevStats?.availableTeachers || 0,
+                callsThisWeek,
+                totalCalls: calls.length
+            }));
+        });
+        unsubscribers.push(unsubCalls);
+
         setRecentSessions([]);
-
-        // تحديث فوري للإحصائيات الأساسية
-        setStats(prevStats => ({
-            followedTeachers: followedCount,
-            sessionsThisWeek: prevStats?.sessionsThisWeek ?? 0,
-            dailyAverage: prevStats?.dailyAverage ?? '0 د'
-        }));
-
         setIsLoading(false);
 
         return () => unsubscribers.forEach(unsub => unsub());
@@ -155,9 +171,9 @@ export default function StudentDashboardPage() {
     }
     
     const statCards = [
-        { title: 'المعلمون المتابعون', value: stats?.followedTeachers ?? 0, icon: Users, href: '/student/teachers' },
-        { title: 'الدروس المكتملة', value: stats?.sessionsThisWeek ?? 0, icon: BookCopy, href: '/student/teachers' },
-        { title: 'ساعات التعلم', value: stats?.dailyAverage ?? '0', icon: BarChart, href: '/student/teachers' },
+        { title: 'المعلمون المتاحون', value: stats?.availableTeachers ?? 0, icon: Users, href: '/student/teachers' },
+        { title: 'المكالمات هذا الأسبوع', value: stats?.callsThisWeek ?? 0, icon: BookCopy, href: '/student/teachers' },
+        { title: 'إجمالي المكالمات', value: stats?.totalCalls ?? 0, icon: BarChart, href: '/student/teachers' },
     ];
 
     return (
@@ -188,39 +204,17 @@ export default function StudentDashboardPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>حلقات نشطة الآن</CardTitle>
+                    <CardTitle>آخر المكالمات</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {isLoading ? (
-                        <div className="space-y-4">
-                           <Skeleton className="h-16 w-full" />
-                           <Skeleton className="h-16 w-full" />
-                        </div>
-                    ) : recentSessions.length > 0 ? (
-                        <div className="space-y-2">
-                            {recentSessions.map(session => (
-                                <div key={session.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50">
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-10 w-10 border">
-                                            <AvatarImage src={session.teacherAvatar} alt={session.teacherName} data-ai-hint="teacher avatar" />
-                                            <AvatarFallback>{session.teacherName.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <p className="font-semibold text-sm">{session.title}</p>
-                                            <p className="text-xs text-muted-foreground">بواسطة {session.teacherName}</p>
-                                        </div>
-                                    </div>
-                                    <Button asChild variant="default" size="sm" disabled={!session.sessionLink}>
-                                        <a href={session.sessionLink} target="_blank" rel="noopener noreferrer">
-                                            انضم الآن
-                                        </a>
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-center text-muted-foreground py-4">لا توجد حلقات نشطة حاليًا من المعلمين الذين تتابعهم.</p>
-                    )}
+                    <div className="text-center py-8 text-gray-500">
+                        <BookCopy className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p>لا توجد مكالمات حديثة</p>
+                        <p className="text-sm mt-2">ابدأ مكالمة مع أحد المعلمين</p>
+                        <Button className="mt-4" onClick={() => window.location.href = '/student/teachers'}>
+                            تصفح المعلمين
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
         </div>

@@ -40,7 +40,7 @@ const statusMap = {
 export default function TeacherDashboardPage() {
     const { userData: teacher, loading: userLoading } = useUserData();
     const [recentSessions, setRecentSessions] = useState<Session[]>([]);
-    const [stats, setStats] = useState<{followers: number, sessionsThisWeek: number, totalSessions: number} | null>(null);
+    const [stats, setStats] = useState<{students: number, callsThisWeek: number, totalCalls: number} | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isDialogOpen, setDialogOpen] = useState(false);
 
@@ -49,29 +49,43 @@ export default function TeacherDashboardPage() {
         
         const unsubscribers: (()=>void)[] = [];
 
-        // Fetch recent sessions
-        const sessionsQuery = query(
-            collection(db, 'sessions'), 
-            where('teacherId', '==', teacher.id),
-            orderBy('createdAt', 'desc'),
-            limit(5)
-        );
-        const unsubSessions = onSnapshot(sessionsQuery, (snapshot) => {
-            const sessionsData = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as Session);
-            setRecentSessions(sessionsData);
+        // Set basic stats for calls
+        setStats({
+            students: 0,
+            callsThisWeek: 0,
+            totalCalls: 0
         });
-        unsubscribers.push(unsubSessions);
 
-        // Fetch user count for stats (as a proxy for followers)
-         const usersQuery = query(
-             collection(db, 'users'), 
-             where('followedTeachers', 'array-contains', teacher.id),
-             where('gender', '==', teacher.gender)
-         );
-         const unsubFollowers = onSnapshot(usersQuery, (snapshot) => {
-             setStats(prev => ({...prev!, followers: snapshot.size}));
-         });
-        unsubscribers.push(unsubFollowers);
+        // Load students count
+        const studentsQuery = query(collection(db, 'users'), where('type', '==', 'student'));
+        const unsubStudents = onSnapshot(studentsQuery, (snapshot) => {
+            setStats(prevStats => ({
+                students: snapshot.size,
+                callsThisWeek: prevStats?.callsThisWeek || 0,
+                totalCalls: prevStats?.totalCalls || 0
+            }));
+        });
+        unsubscribers.push(unsubStudents);
+
+        // Load call statistics
+        const callsQuery = query(collection(db, 'call_sessions'), where('teacherId', '==', teacher.id));
+        const unsubCalls = onSnapshot(callsQuery, (snapshot) => {
+            const calls = snapshot.docs.map(doc => doc.data());
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+
+            const callsThisWeek = calls.filter(call => {
+                const callDate = call.createdAt?.toDate() || new Date(0);
+                return callDate >= weekAgo;
+            }).length;
+
+            setStats(prevStats => ({
+                students: prevStats?.students || 0,
+                callsThisWeek,
+                totalCalls: calls.length
+            }));
+        });
+        unsubscribers.push(unsubCalls);
 
 
         setIsLoading(false);
@@ -88,9 +102,9 @@ export default function TeacherDashboardPage() {
 
     const statusInfo = statusMap[teacher.descriptionStatus || 'pending'];
     const statCards = [
-        { title: 'عدد المتابعين', value: stats?.followers ?? 0, icon: Users },
-        { title: 'الحلقات هذا الأسبوع', value: stats?.sessionsThisWeek ?? 0, icon: BookCopy },
-        { title: 'إجمالي الحلقات', value: stats?.totalSessions ?? 0, icon: BarChart },
+        { title: 'عدد الطلاب', value: stats?.students ?? 0, icon: Users },
+        { title: 'المكالمات هذا الأسبوع', value: stats?.callsThisWeek ?? 0, icon: BookCopy },
+        { title: 'إجمالي المكالمات', value: stats?.totalCalls ?? 0, icon: BarChart },
     ];
 
 
@@ -142,44 +156,15 @@ export default function TeacherDashboardPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>آخر الحلقات</CardTitle>
-                     <CardDescription>عرض لآخر 5 حلقات قمت بإنشائها.</CardDescription>
+                    <CardTitle>آخر المكالمات</CardTitle>
+                     <CardDescription>عرض لآخر المكالمات مع الطلاب.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                   <div className="overflow-x-auto">
-                       {isLoading ? (
-                           <div className="space-y-2">
-                               <Skeleton className="h-12 w-full" />
-                               <Skeleton className="h-12 w-full" />
-                               <Skeleton className="h-12 w-full" />
-                           </div>
-                       ) : recentSessions.length > 0 ? (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>عنوان الحلقة</TableHead>
-                                        <TableHead className="hidden sm:table-cell">تاريخ الرفع</TableHead>
-                                        <TableHead>المستمعون</TableHead>
-                                        <TableHead>الحالة</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {recentSessions.map((session) => (
-                                        <TableRow key={session.id}>
-                                            <TableCell className="font-medium">{session.title}</TableCell>
-                                            <TableCell className="hidden sm:table-cell">{new Date(session.createdAt.toDate()).toLocaleDateString('ar-EG')}</TableCell>
-                                            <TableCell>{session.listeners || 0}</TableCell>
-                                            <TableCell>
-                                                <Badge variant={session.status === 'active' ? 'default' : 'secondary'}>{session.status === 'active' ? 'نشطة' : 'منتهية'}</Badge>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                       ) : (
-                        <p className="text-center text-muted-foreground py-4">لم تقم بإنشاء أي حلقات بعد.</p>
-                       )}
-                   </div>
+                    <div className="text-center py-8 text-gray-500">
+                        <BookCopy className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p>لا توجد مكالمات حديثة</p>
+                        <p className="text-sm mt-2">ستظهر هنا المكالمات مع الطلاب</p>
+                    </div>
                 </CardContent>
             </Card>
         </div>

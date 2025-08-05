@@ -33,8 +33,9 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [connectionStatus, setConnectionStatus] = useState<'requesting-permission' | 'connecting' | 'connected' | 'disconnected'>('requesting-permission');
   const [remoteUserName, setRemoteUserName] = useState<string>('');
+  const [permissionGranted, setPermissionGranted] = useState(false);
 
   // Refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -48,8 +49,6 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
 
   // Initialize WebRTC
   useEffect(() => {
-    initializeCall();
-
     // Prevent scrolling and add full screen class
     document.body.classList.add('video-call-active');
     document.documentElement.style.overflow = 'hidden';
@@ -62,6 +61,21 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
     };
   }, []);
 
+  const requestPermission = async () => {
+    try {
+      setConnectionStatus('connecting');
+      await initializeCall();
+    } catch (error) {
+      console.error('Permission denied:', error);
+      setConnectionStatus('disconnected');
+      toast({
+        title: "تم رفض الإذن",
+        description: "يرجى السماح بالوصول للكاميرا والمايكروفون",
+        variant: "destructive"
+      });
+    }
+  };
+
   const initializeCall = async () => {
     try {
       // Get user media
@@ -69,6 +83,8 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
         video: true,
         audio: true
       });
+
+      setPermissionGranted(true);
 
       localStreamRef.current = stream;
       if (localVideoRef.current) {
@@ -339,8 +355,30 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
           )}
         </div>
 
+        {/* Permission Request Overlay */}
+        {connectionStatus === 'requesting-permission' && (
+          <div className="absolute inset-0 bg-black bg-opacity-90 backdrop-blur-sm flex items-center justify-center z-30">
+            <div className="text-center max-w-md mx-auto px-6">
+              <div className="relative mb-8">
+                <div className="w-20 h-20 bg-blue-500 bg-opacity-20 rounded-full flex items-center justify-center mx-auto">
+                  <VideocamIcon sx={{ fontSize: 40, color: '#3b82f6' }} />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold mb-4">بدء المكالمة</h3>
+              <p className="text-gray-300 text-lg mb-8">نحتاج إذن للوصول للكاميرا والمايكروفون لبدء المكالمة</p>
+              <button
+                onClick={requestPermission}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-full transition-all duration-200 transform hover:scale-105 flex items-center gap-3 mx-auto"
+              >
+                <VideocamIcon sx={{ fontSize: 24 }} />
+                السماح وبدء المكالمة
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Connection Status Overlay */}
-        {connectionStatus !== 'connected' && (
+        {connectionStatus === 'connecting' && (
           <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-30">
             <div className="text-center max-w-md mx-auto px-6">
               <div className="relative mb-8">
@@ -350,11 +388,40 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
                 </div>
               </div>
               <h3 className="text-2xl font-bold mb-2">جاري الاتصال...</h3>
-              <p className="text-gray-300 text-lg">يرجى السماح بالوصول للكاميرا والمايكروفون</p>
+              <p className="text-gray-300 text-lg">في انتظار المستخدم الآخر...</p>
               <div className="mt-6 flex justify-center gap-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Disconnected Overlay */}
+        {connectionStatus === 'disconnected' && (
+          <div className="absolute inset-0 bg-black bg-opacity-90 backdrop-blur-sm flex items-center justify-center z-30">
+            <div className="text-center max-w-md mx-auto px-6">
+              <div className="relative mb-8">
+                <div className="w-20 h-20 bg-red-500 bg-opacity-20 rounded-full flex items-center justify-center mx-auto">
+                  <VideocamOffIcon sx={{ fontSize: 40, color: '#ef4444' }} />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold mb-4 text-red-400">فشل الاتصال</h3>
+              <p className="text-gray-300 text-lg mb-8">لم نتمكن من الوصول للكاميرا أو المايكروفون</p>
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={requestPermission}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full transition-all duration-200"
+                >
+                  إعادة المحاولة
+                </button>
+                <button
+                  onClick={endCall}
+                  className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-full transition-all duration-200"
+                >
+                  إلغاء
+                </button>
               </div>
             </div>
           </div>

@@ -47,7 +47,6 @@ import { Timestamp } from 'firebase/firestore';
 
 const menuItems = [
     { href: '/student/dashboard', label: 'الرئيسية', icon: Home },
-    { href: '/student/sessions', label: 'الحلقات', icon: Radio },
     { href: '/student/teachers', label: 'المعلمون', icon: Users },
     { href: '/student/settings', label: 'الإعدادات', icon: Settings },
 ];

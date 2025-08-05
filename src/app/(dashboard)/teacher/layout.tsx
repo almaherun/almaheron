@@ -45,7 +45,6 @@ import { signOut } from 'firebase/auth';
 
 const menuItems = [
     { href: '/teacher/dashboard', label: 'الرئيسية', icon: Home },
-    { href: '/teacher/sessions', label: 'الحلقات', icon: Radio },
     { href: '/teacher/students', label: 'الطلاب', icon: Users },
     { href: '/teacher/profile', label: 'الإعدادات', icon: Settings },
 ];
