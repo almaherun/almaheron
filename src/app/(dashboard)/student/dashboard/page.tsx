@@ -123,27 +123,14 @@ export default function StudentDashboardPage() {
 
         const unsubscribers: (() => void)[] = [];
 
-        // Fetch call sessions
-        const sessionsQuery = query(collection(db, 'call_sessions'), where('studentId', '==', student.id), where('status', 'in', ['scheduled', 'active']));
-        const unsubSessions = onSnapshot(sessionsQuery, (snapshot) => {
-            const sessionsData = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as Session);
-            setRecentSessions(sessionsData);
+        // Set basic stats without complex queries
+        setStats({
+            followedTeachers: followedCount,
+            sessionsThisWeek: 0, // Will be updated with actual data later
+            dailyAverage: '0 ساعة'
         });
-        unsubscribers.push(unsubSessions);
 
-        // Calculate stats
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-
-        const weeklySessionsQuery = query(collection(db, 'call_sessions'), where('studentId', '==', student.id), where('scheduledTime', '>=', weekAgo));
-        const unsubWeeklySessions = onSnapshot(weeklySessionsQuery, (snapshot) => {
-             setStats({
-                followedTeachers: followedCount, // استخدام القيمة المحدثة فوراً
-                sessionsThisWeek: snapshot.size,
-                dailyAverage: '0 د' // Placeholder
-            });
-        });
-        unsubscribers.push(unsubWeeklySessions);
+        setRecentSessions([]);
 
         // تحديث فوري للإحصائيات الأساسية
         setStats(prevStats => ({
@@ -169,8 +156,8 @@ export default function StudentDashboardPage() {
     
     const statCards = [
         { title: 'المعلمون المتابعون', value: stats?.followedTeachers ?? 0, icon: Users, href: '/student/teachers' },
-        { title: 'الجلسات هذا الأسبوع', value: stats?.sessionsThisWeek ?? 0, icon: BookCopy, href: '/student/sessions' },
-        { title: 'المعدل اليومي', value: stats?.dailyAverage ?? '0', icon: BarChart, href: '/student/sessions' },
+        { title: 'الدروس المكتملة', value: stats?.sessionsThisWeek ?? 0, icon: BookCopy, href: '/student/teachers' },
+        { title: 'ساعات التعلم', value: stats?.dailyAverage ?? '0', icon: BarChart, href: '/student/teachers' },
     ];
 
     return (

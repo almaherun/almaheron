@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Check, RotateCw } from 'lucide-react';
+import { Search, Plus, Check, RotateCw, Video, Phone } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -15,10 +15,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useUserData, UserData } from '@/hooks/useUser';
-import { collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp } from 'firebase/firestore';
+import VideoCall from '@/components/VideoCall';
 
 
-const TeacherList = ({ teachers, isLoading, onFollowToggle, localFollowedTeachers, followingInProgress }: { teachers: User[], isLoading: boolean, onFollowToggle: (teacherId: string) => void, localFollowedTeachers: string[], followingInProgress: string | null }) => {
+const TeacherList = ({ teachers, isLoading, onFollowToggle, onStartCall, localFollowedTeachers, followingInProgress }: { teachers: User[], isLoading: boolean, onFollowToggle: (teacherId: string) => void, onStartCall: (teacher: User) => void, localFollowedTeachers: string[], followingInProgress: string | null }) => {
     if (isLoading) {
         return (
             <div className="space-y-4 p-4">
@@ -58,27 +59,44 @@ const TeacherList = ({ teachers, isLoading, onFollowToggle, localFollowedTeacher
                                 <p className="text-sm text-muted-foreground">{teacher.specialty}</p>
                             </div>
                         </Link>
-                        <Button 
-                            variant={isFollowing(teacher.uid) ? "secondary" : "default"} 
-                            size="sm"
-                            onClick={(e) => handleFollowClick(e, teacher.uid)}
-                            disabled={followingInProgress === teacher.uid}
-                            className="w-28"
-                        >
-                            {followingInProgress === teacher.uid ? (
-                                <RotateCw className="h-4 w-4 animate-spin" />
-                            ) : isFollowing(teacher.uid) ? (
-                                <>
-                                    <Check className="ml-1 h-4 w-4" />
-                                    <span>تتابعه</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Plus className="ml-1 h-4 w-4" />
-                                    <span>متابعة</span>
-                                </>
+                        <div className="flex gap-2">
+                            {isFollowing(teacher.uid) && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        onStartCall(teacher);
+                                    }}
+                                    className="flex items-center gap-1"
+                                >
+                                    <Video className="h-4 w-4" />
+                                    <span>اتصال</span>
+                                </Button>
                             )}
-                        </Button>
+                            <Button
+                                variant={isFollowing(teacher.uid) ? "secondary" : "default"}
+                                size="sm"
+                                onClick={(e) => handleFollowClick(e, teacher.uid)}
+                                disabled={followingInProgress === teacher.uid}
+                                className="w-28"
+                            >
+                                {followingInProgress === teacher.uid ? (
+                                    <RotateCw className="h-4 w-4 animate-spin" />
+                                ) : isFollowing(teacher.uid) ? (
+                                    <>
+                                        <Check className="ml-1 h-4 w-4" />
+                                        <span>تتابعه</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus className="ml-1 h-4 w-4" />
+                                        <span>متابعة</span>
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </div>
                     {index < teachers.length - 1 && <Separator />}
                 </div>
@@ -95,6 +113,8 @@ export default function TeachersPage() {
     const [activeTab, setActiveTab] = useState('all');
     const [followingInProgress, setFollowingInProgress] = useState<string | null>(null);
     const [localFollowedTeachers, setLocalFollowedTeachers] = useState<string[]>([]);
+    const [isInCall, setIsInCall] = useState(false);
+    const [currentCall, setCurrentCall] = useState<{roomId: string, teacherName: string} | null>(null);
     const { toast } = useToast();
 
     // تحديث الحالة المحلية عند تغيير بيانات الطالب
@@ -162,6 +182,60 @@ export default function TeachersPage() {
         }
     };
 
+    const generateRoomId = () => {
+        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    };
+
+    const startCall = async (teacher: User) => {
+        if (!student) return;
+
+        try {
+            const roomId = generateRoomId();
+
+            // Create call session in database
+            await addDoc(collection(db, 'call_sessions'), {
+                teacherId: teacher.uid,
+                teacherName: teacher.name,
+                studentId: student.id,
+                studentName: student.name,
+                roomId: roomId,
+                status: 'active',
+                startTime: serverTimestamp(),
+                createdAt: serverTimestamp()
+            });
+
+            setCurrentCall({
+                roomId: roomId,
+                teacherName: teacher.name
+            });
+            setIsInCall(true);
+
+            toast({
+                title: "بدء المكالمة",
+                description: `جاري الاتصال بـ ${teacher.name}...`,
+                className: "bg-blue-600 text-white"
+            });
+        } catch (error) {
+            console.error('Error starting call:', error);
+            toast({
+                title: "خطأ",
+                description: "لم نتمكن من بدء المكالمة",
+                variant: "destructive"
+            });
+        }
+    };
+
+    const endCall = async () => {
+        setIsInCall(false);
+        setCurrentCall(null);
+
+        toast({
+            title: "انتهت المكالمة",
+            description: "تم إنهاء المكالمة بنجاح",
+            className: "bg-green-600 text-white"
+        });
+    };
+
     const filteredTeachers = teacherList.filter(teacher => {
         const matchesSearch = teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                               (teacher.specialty || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -175,6 +249,18 @@ export default function TeachersPage() {
 
         return matchesSearch && matchesTab;
     });
+
+    // Show video call interface
+    if (isInCall && currentCall) {
+        return (
+            <VideoCall
+                roomId={currentCall.roomId}
+                userName={student?.name || 'طالب'}
+                userType="student"
+                onCallEnd={endCall}
+            />
+        );
+    }
 
     return (
         <div className="space-y-4">
@@ -199,6 +285,7 @@ export default function TeachersPage() {
                             teachers={filteredTeachers}
                             isLoading={isLoading || userLoading}
                             onFollowToggle={handleFollowToggle}
+                            onStartCall={startCall}
                             localFollowedTeachers={localFollowedTeachers}
                             followingInProgress={followingInProgress}
                          />
