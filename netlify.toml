@@ -1,26 +1,12 @@
 [build]
-  publish = ".next"
   command = "npm run build"
 
 [build.environment]
   NODE_VERSION = "18"
-  NPM_FLAGS = "--production=false"
 
 # إعدادات Next.js
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-
-# إعادة توجيه للـ API routes
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
-
-# إعادة توجيه للـ SPA
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
 
 [context.production.environment]
   NODE_ENV = "production"

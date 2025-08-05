@@ -1,14 +1,14 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // إزالة swcMinify (deprecated في Next.js 15)
+  // إعدادات الصور
   images: {
     domains: ['res.cloudinary.com', 'lh3.googleusercontent.com'],
     formats: ['image/webp', 'image/avif'],
   },
-  
+
   compress: true,
-  
+
   experimental: {
     optimizeCss: true,
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
