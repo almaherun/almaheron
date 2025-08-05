@@ -10,9 +10,16 @@ import {
   PhoneOff,
   Settings
 } from 'lucide-react';
+import VideocamIcon from '@mui/icons-material/Videocam';
+import VideocamOffIcon from '@mui/icons-material/VideocamOff';
+import MicIcon from '@mui/icons-material/Mic';
+import MicOffIcon from '@mui/icons-material/MicOff';
+import CallEndIcon from '@mui/icons-material/CallEnd';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useToast } from '@/hooks/use-toast';
 import { io, Socket } from 'socket.io-client';
 import SimplePeer from 'simple-peer';
+import '../styles/videocall.css';
 
 interface VideoCallProps {
   roomId: string;
@@ -42,8 +49,16 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
   // Initialize WebRTC
   useEffect(() => {
     initializeCall();
+
+    // Prevent scrolling and add full screen class
+    document.body.classList.add('video-call-active');
+    document.documentElement.style.overflow = 'hidden';
+
     return () => {
       cleanup();
+      // Restore scrolling
+      document.body.classList.remove('video-call-active');
+      document.documentElement.style.overflow = 'auto';
     };
   }, []);
 
@@ -256,31 +271,55 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white relative">
-      {/* Header */}
-      <div className="absolute top-4 left-4 z-10">
-        <div className="bg-black bg-opacity-50 rounded-lg px-3 py-2 text-sm">
-          الغرفة: {roomId.substring(0, 8)}...
+    <div className="fixed inset-0 bg-gray-900 text-white z-50 overflow-hidden">
+      {/* Header Info */}
+      <div className="absolute top-6 left-6 z-20">
+        <div className="bg-gray-800 bg-opacity-90 backdrop-blur-sm rounded-xl px-4 py-2 text-sm font-medium shadow-lg">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span>مكالمة نشطة</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Time Display */}
+      <div className="absolute top-6 right-6 z-20">
+        <div className="bg-gray-800 bg-opacity-90 backdrop-blur-sm rounded-xl px-4 py-2 text-sm font-medium shadow-lg">
+          {new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
 
       {/* Main Video Container */}
-      <div className="relative w-full h-screen">
+      <div className="relative w-full h-full">
         {/* Remote Video (Full Screen) */}
         <video
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className="w-full h-full object-cover bg-gray-800"
+          className="w-full h-full object-cover bg-gradient-to-br from-gray-800 to-gray-900"
         />
 
-        {/* Remote User Name */}
-        <div className="absolute bottom-20 left-4 bg-black bg-opacity-50 rounded-lg px-3 py-2 text-sm">
-          {remoteUserName}
-        </div>
+        {/* Remote User Info */}
+        {remoteUserName && (
+          <div className="absolute bottom-24 left-6 z-20">
+            <div className="bg-gray-800 bg-opacity-90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
+                  {remoteUserName.charAt(0)}
+                </div>
+                <span className="font-medium">{remoteUserName}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
-        {/* Local Video (Picture in Picture) */}
-        <div className="absolute top-4 right-4 w-64 h-48 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-600 shadow-lg">
+        {/* Local Video (Picture in Picture) - Responsive */}
+        <div className="absolute z-20 bg-gray-800 rounded-2xl overflow-hidden shadow-2xl border-2 border-gray-600 transition-all duration-300 hover:scale-105
+                        top-4 right-4 w-24 h-18
+                        sm:top-6 sm:right-6 sm:w-32 sm:h-24
+                        md:w-40 md:h-30
+                        lg:w-48 lg:h-36
+                        xl:w-56 xl:h-42">
           <video
             ref={localVideoRef}
             autoPlay
@@ -288,63 +327,115 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
             muted
             className="w-full h-full object-cover"
           />
-          <div className="absolute bottom-2 left-2 text-xs bg-black bg-opacity-50 px-2 py-1 rounded">
-            أنت ({userType === 'teacher' ? 'معلم' : 'طالب'})
+          {!isVideoEnabled && (
+            <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+              <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                <VideoOff className="h-4 w-4 text-gray-400" />
+              </div>
+            </div>
+          )}
+          <div className="absolute bottom-1 left-2 text-xs bg-black bg-opacity-70 px-2 py-1 rounded-md font-medium">
+            أنت
           </div>
+          {!isAudioEnabled && (
+            <div className="absolute top-1 right-1 bg-red-500 rounded-full p-1">
+              <MicOff className="h-3 w-3 text-white" />
+            </div>
+          )}
         </div>
 
         {/* Connection Status Overlay */}
         {connectionStatus !== 'connected' && (
-          <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
-              <p className="text-xl">جاري الاتصال...</p>
-              <p className="text-sm text-gray-300 mt-2">يرجى السماح بالوصول للكاميرا والمايكروفون</p>
+          <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-30">
+            <div className="text-center max-w-md mx-auto px-6">
+              <div className="relative mb-8">
+                <div className="w-20 h-20 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Video className="h-8 w-8 text-blue-500" />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold mb-2">جاري الاتصال...</h3>
+              <p className="text-gray-300 text-lg">يرجى السماح بالوصول للكاميرا والمايكروفون</p>
+              <div className="mt-6 flex justify-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Bottom Controls Bar */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-6">
-          <div className="flex justify-center items-center gap-4">
-            {/* Audio Toggle */}
-            <Button
-              variant={isAudioEnabled ? "secondary" : "destructive"}
-              size="lg"
-              onClick={toggleAudio}
-              className="rounded-full w-14 h-14 hover:scale-110 transition-transform"
-            >
-              {isAudioEnabled ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
-            </Button>
+        {/* Bottom Controls Bar - Google Meet Style */}
+        <div className="absolute bottom-0 left-0 right-0 z-20">
+          <div className="bg-gradient-to-t from-black via-black/80 to-transparent pt-8 pb-4 sm:pt-12 sm:pb-8">
+            <div className="flex justify-center items-center gap-2 sm:gap-3 md:gap-4 px-4">
 
-            {/* Video Toggle */}
-            <Button
-              variant={isVideoEnabled ? "secondary" : "destructive"}
-              size="lg"
-              onClick={toggleVideo}
-              className="rounded-full w-14 h-14 hover:scale-110 transition-transform"
-            >
-              {isVideoEnabled ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
-            </Button>
+              {/* Microphone Toggle */}
+              <button
+                onClick={toggleAudio}
+                className={`relative group transition-all duration-200 transform hover:scale-110 active:scale-95
+                           ${isAudioEnabled
+                             ? 'bg-gray-700 hover:bg-gray-600'
+                             : 'bg-red-600 hover:bg-red-700'
+                           }
+                           rounded-full p-3 sm:p-4 shadow-lg`}
+                title={isAudioEnabled ? 'كتم الصوت' : 'إلغاء كتم الصوت'}
+              >
+                {isAudioEnabled ? (
+                  <MicIcon sx={{ fontSize: { xs: 20, sm: 24 }, color: 'white' }} />
+                ) : (
+                  <MicOffIcon sx={{ fontSize: { xs: 20, sm: 24 }, color: 'white' }} />
+                )}
+                <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  {isAudioEnabled ? 'كتم الصوت' : 'إلغاء كتم الصوت'}
+                </div>
+              </button>
 
-            {/* End Call */}
-            <Button
-              variant="destructive"
-              size="lg"
-              onClick={endCall}
-              className="rounded-full w-16 h-16 bg-red-600 hover:bg-red-700 hover:scale-110 transition-transform"
-            >
-              <PhoneOff className="h-7 w-7" />
-            </Button>
+              {/* Camera Toggle */}
+              <button
+                onClick={toggleVideo}
+                className={`relative group transition-all duration-200 transform hover:scale-110 active:scale-95
+                           ${isVideoEnabled
+                             ? 'bg-gray-700 hover:bg-gray-600'
+                             : 'bg-red-600 hover:bg-red-700'
+                           }
+                           rounded-full p-3 sm:p-4 shadow-lg`}
+                title={isVideoEnabled ? 'إيقاف الكاميرا' : 'تشغيل الكاميرا'}
+              >
+                {isVideoEnabled ? (
+                  <VideocamIcon sx={{ fontSize: { xs: 20, sm: 24 }, color: 'white' }} />
+                ) : (
+                  <VideocamOffIcon sx={{ fontSize: { xs: 20, sm: 24 }, color: 'white' }} />
+                )}
+                <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  {isVideoEnabled ? 'إيقاف الكاميرا' : 'تشغيل الكاميرا'}
+                </div>
+              </button>
 
-            {/* Settings */}
-            <Button
-              variant="secondary"
-              size="lg"
-              className="rounded-full w-14 h-14 hover:scale-110 transition-transform"
-            >
-              <Settings className="h-6 w-6" />
-            </Button>
+              {/* End Call Button */}
+              <button
+                onClick={endCall}
+                className="relative group bg-red-600 hover:bg-red-700 rounded-full p-4 sm:p-5 shadow-lg transition-all duration-200 transform hover:scale-110 active:scale-95 mx-1 sm:mx-2"
+                title="إنهاء المكالمة"
+              >
+                <CallEndIcon sx={{ fontSize: { xs: 24, sm: 28 }, color: 'white' }} />
+                <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  إنهاء المكالمة
+                </div>
+              </button>
+
+              {/* Settings Button */}
+              <button
+                className="relative group bg-gray-700 hover:bg-gray-600 rounded-full p-3 sm:p-4 shadow-lg transition-all duration-200 transform hover:scale-110 active:scale-95"
+                title="الإعدادات"
+              >
+                <SettingsIcon sx={{ fontSize: { xs: 20, sm: 24 }, color: 'white' }} />
+                <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  الإعدادات
+                </div>
+              </button>
+
+            </div>
           </div>
         </div>
       </div>

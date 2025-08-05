@@ -178,15 +178,17 @@ export default function TeachersPage() {
         return matchesSearch;
     });
 
-    // Show video call interface
+    // Show video call interface - Full screen, no navigation
     if (isInCall && currentCall) {
         return (
-            <VideoCall
-                roomId={currentCall.roomId}
-                userName={student?.name || 'طالب'}
-                userType="student"
-                onCallEnd={endCall}
-            />
+            <div className="fixed inset-0 z-50">
+                <VideoCall
+                    roomId={currentCall.roomId}
+                    userName={student?.name || 'طالب'}
+                    userType="student"
+                    onCallEnd={endCall}
+                />
+            </div>
         );
     }
 

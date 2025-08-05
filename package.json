@@ -18,7 +18,11 @@
     "validate": "npm run type-check && npm run lint && npm run test"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^3.3.2",
+    "@mui/icons-material": "^7.3.0",
+    "@mui/material": "^7.3.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-avatar": "^1.0.4",
