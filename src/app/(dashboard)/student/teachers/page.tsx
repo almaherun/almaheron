@@ -18,7 +18,7 @@ import { useUserData, UserData } from '@/hooks/useUser';
 import { collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 
-const TeacherList = ({ teachers, isLoading, onFollowToggle, student, followingInProgress }: { teachers: User[], isLoading: boolean, onFollowToggle: (teacherId: string) => void, student: UserData | null, followingInProgress: string | null }) => {
+const TeacherList = ({ teachers, isLoading, onFollowToggle, localFollowedTeachers, followingInProgress }: { teachers: User[], isLoading: boolean, onFollowToggle: (teacherId: string) => void, localFollowedTeachers: string[], followingInProgress: string | null }) => {
     if (isLoading) {
         return (
             <div className="space-y-4 p-4">
@@ -40,7 +40,7 @@ const TeacherList = ({ teachers, isLoading, onFollowToggle, student, followingIn
     }
 
     const isFollowing = (teacherId: string) => {
-        return student?.followedTeachers?.includes(teacherId);
+        return localFollowedTeachers.includes(teacherId);
     }
 
     return (
@@ -94,7 +94,15 @@ export default function TeachersPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('all');
     const [followingInProgress, setFollowingInProgress] = useState<string | null>(null);
+    const [localFollowedTeachers, setLocalFollowedTeachers] = useState<string[]>([]);
     const { toast } = useToast();
+
+    // تحديث الحالة المحلية عند تغيير بيانات الطالب
+    useEffect(() => {
+        if (student?.followedTeachers) {
+            setLocalFollowedTeachers(student.followedTeachers);
+        }
+    }, [student?.followedTeachers]);
 
     useEffect(() => {
         const q = query(
@@ -113,24 +121,41 @@ export default function TeachersPage() {
     const handleFollowToggle = async (teacherId: string) => {
         if (!student) return;
         setFollowingInProgress(teacherId);
-        
+
         const studentRef = doc(db, 'users', student.id);
-        const isCurrentlyFollowing = student.followedTeachers?.includes(teacherId);
+        const isCurrentlyFollowing = localFollowedTeachers.includes(teacherId);
 
         try {
             if (isCurrentlyFollowing) {
+                // تحديث فوري للحالة المحلية أولاً
+                const updatedFollowed = localFollowedTeachers.filter(id => id !== teacherId);
+                setLocalFollowedTeachers(updatedFollowed);
+
+                // ثم تحديث قاعدة البيانات
                 await updateDoc(studentRef, {
                     followedTeachers: arrayRemove(teacherId)
                 });
+
                 toast({ title: 'تم إلغاء المتابعة' });
             } else {
+                // تحديث فوري للحالة المحلية أولاً
+                const updatedFollowed = [...localFollowedTeachers, teacherId];
+                setLocalFollowedTeachers(updatedFollowed);
+
+                // ثم تحديث قاعدة البيانات
                 await updateDoc(studentRef, {
                     followedTeachers: arrayUnion(teacherId)
                 });
+
                 toast({ title: 'تمت المتابعة بنجاح!' });
             }
+
         } catch (error) {
             console.error("Follow toggle error: ", error);
+            // في حالة الخطأ، إرجاع الحالة المحلية للوضع السابق
+            if (student?.followedTeachers) {
+                setLocalFollowedTeachers(student.followedTeachers);
+            }
             toast({ title: 'خطأ', description: 'لم نتمكن من إتمام العملية.', variant: 'destructive' });
         } finally {
             setFollowingInProgress(null);
@@ -141,7 +166,7 @@ export default function TeachersPage() {
         const matchesSearch = teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                               (teacher.specialty || '').toLowerCase().includes(searchTerm.toLowerCase());
 
-        const isFollowing = student?.followedTeachers?.includes(teacher.uid);
+        const isFollowing = localFollowedTeachers.includes(teacher.uid);
 
         const matchesTab = 
             activeTab === 'all' ||
@@ -170,11 +195,11 @@ export default function TeachersPage() {
                 </TabsList>
                 <Card className="mt-4">
                     <CardContent className="p-0">
-                         <TeacherList 
-                            teachers={filteredTeachers} 
-                            isLoading={isLoading || userLoading} 
+                         <TeacherList
+                            teachers={filteredTeachers}
+                            isLoading={isLoading || userLoading}
                             onFollowToggle={handleFollowToggle}
-                            student={student}
+                            localFollowedTeachers={localFollowedTeachers}
                             followingInProgress={followingInProgress}
                          />
                     </CardContent>

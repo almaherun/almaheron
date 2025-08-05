@@ -105,14 +105,24 @@ export default function StudentDashboardPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (!student || !student.followedTeachers || student.followedTeachers.length === 0) {
+        if (!student) {
             setIsLoading(false);
             setStats({ followedTeachers: 0, sessionsThisWeek: 0, dailyAverage: '0' });
             return;
         }
 
+        // تحديث الإحصائيات الأساسية فوراً
+        const followedCount = student.followedTeachers?.length ?? 0;
+
+        if (followedCount === 0) {
+            setIsLoading(false);
+            setStats({ followedTeachers: 0, sessionsThisWeek: 0, dailyAverage: '0' });
+            setRecentSessions([]);
+            return;
+        }
+
         const unsubscribers: (() => void)[] = [];
-        
+
         // Fetch sessions
         const sessionsQuery = query(collection(db, 'sessions'), where('teacherId', 'in', student.followedTeachers), where('status', '==', 'active'));
         const unsubSessions = onSnapshot(sessionsQuery, (snapshot) => {
@@ -120,26 +130,33 @@ export default function StudentDashboardPage() {
             setRecentSessions(sessionsData);
         });
         unsubscribers.push(unsubSessions);
-        
+
         // Calculate stats
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
-        
+
         const weeklySessionsQuery = query(collection(db, 'sessions'), where('teacherId', 'in', student.followedTeachers), where('createdAt', '>=', weekAgo));
         const unsubWeeklySessions = onSnapshot(weeklySessionsQuery, (snapshot) => {
              setStats({
-                followedTeachers: student.followedTeachers?.length ?? 0,
+                followedTeachers: followedCount, // استخدام القيمة المحدثة فوراً
                 sessionsThisWeek: snapshot.size,
                 dailyAverage: '0 د' // Placeholder
             });
         });
         unsubscribers.push(unsubWeeklySessions);
 
+        // تحديث فوري للإحصائيات الأساسية
+        setStats(prevStats => ({
+            followedTeachers: followedCount,
+            sessionsThisWeek: prevStats?.sessionsThisWeek ?? 0,
+            dailyAverage: prevStats?.dailyAverage ?? '0 د'
+        }));
+
         setIsLoading(false);
 
         return () => unsubscribers.forEach(unsub => unsub());
 
-    }, [student]);
+    }, [student, student?.followedTeachers?.length]); // إضافة dependency للطول
 
 
     if (userLoading || isLoading) {
