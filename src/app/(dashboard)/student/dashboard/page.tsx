@@ -123,8 +123,8 @@ export default function StudentDashboardPage() {
 
         const unsubscribers: (() => void)[] = [];
 
-        // Fetch sessions
-        const sessionsQuery = query(collection(db, 'sessions'), where('teacherId', 'in', student.followedTeachers), where('status', '==', 'active'));
+        // Fetch call sessions
+        const sessionsQuery = query(collection(db, 'call_sessions'), where('studentId', '==', student.id), where('status', 'in', ['scheduled', 'active']));
         const unsubSessions = onSnapshot(sessionsQuery, (snapshot) => {
             const sessionsData = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as Session);
             setRecentSessions(sessionsData);
@@ -135,7 +135,7 @@ export default function StudentDashboardPage() {
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
 
-        const weeklySessionsQuery = query(collection(db, 'sessions'), where('teacherId', 'in', student.followedTeachers), where('createdAt', '>=', weekAgo));
+        const weeklySessionsQuery = query(collection(db, 'call_sessions'), where('studentId', '==', student.id), where('scheduledTime', '>=', weekAgo));
         const unsubWeeklySessions = onSnapshot(weeklySessionsQuery, (snapshot) => {
              setStats({
                 followedTeachers: followedCount, // استخدام القيمة المحدثة فوراً
@@ -169,7 +169,7 @@ export default function StudentDashboardPage() {
     
     const statCards = [
         { title: 'المعلمون المتابعون', value: stats?.followedTeachers ?? 0, icon: Users, href: '/student/teachers' },
-        { title: 'الحلقات هذا الأسبوع', value: stats?.sessionsThisWeek ?? 0, icon: BookCopy, href: '/student/sessions' },
+        { title: 'الجلسات هذا الأسبوع', value: stats?.sessionsThisWeek ?? 0, icon: BookCopy, href: '/student/sessions' },
         { title: 'المعدل اليومي', value: stats?.dailyAverage ?? '0', icon: BarChart, href: '/student/sessions' },
     ];
 
