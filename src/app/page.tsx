@@ -83,6 +83,25 @@ export default function HomePage() {
           ابدأ الآن مجاناً
         </Link>
       </div>
+
+      {/* Debug Links */}
+      <div style={{ marginTop: '40px', padding: '20px', backgroundColor: '#f1f5f9', borderRadius: '8px' }}>
+        <h3 style={{ fontSize: '1.2rem', marginBottom: '15px', color: '#475569' }}>روابط التشخيص:</h3>
+        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Link href="/diagnose" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+            صفحة التشخيص المتقدمة
+          </Link>
+          <Link href="/static" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+            الصفحة الثابتة
+          </Link>
+          <Link href="/debug" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+            صفحة Debug
+          </Link>
+          <Link href="/test" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+            صفحة الاختبار
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

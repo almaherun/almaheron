@@ -22,10 +22,8 @@ export default function RootLayout({
     <html lang="ar" dir="rtl">
       <body className={cairo.className}>
         <ErrorBoundary>
-          <AuthProvider>
-            <Toaster />
-            {children}
-          </AuthProvider>
+          <Toaster />
+          {children}
         </ErrorBoundary>
       </body>
     </html>
