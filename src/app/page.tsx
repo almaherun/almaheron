@@ -1,107 +1,146 @@
 
-// صفحة رئيسية ثابتة بدون JavaScript معقد
-import Link from 'next/link';
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { BookOpen, Users, Clock, Award } from 'lucide-react';
 
 export default function HomePage() {
+  const router = useRouter();
+
   return (
-    <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif', textAlign: 'center' }}>
-      <h1 style={{ fontSize: '3rem', color: '#2563eb', marginBottom: '20px' }}>
-        أكاديمية المحرون
-      </h1>
-      <p style={{ fontSize: '1.5rem', color: '#64748b', marginBottom: '40px' }}>
-        منصة تعليم القرآن الكريم والتجويد عبر الإنترنت
-      </p>
-
-      <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
-        <Link
-          href="/auth"
-          style={{
-            backgroundColor: '#2563eb',
-            color: 'white',
-            padding: '15px 30px',
-            borderRadius: '8px',
-            textDecoration: 'none',
-            fontSize: '1.1rem'
-          }}
-        >
-          تسجيل الدخول
-        </Link>
-
-        <Link
-          href="/auth"
-          style={{
-            backgroundColor: '#10b981',
-            color: 'white',
-            padding: '15px 30px',
-            borderRadius: '8px',
-            textDecoration: 'none',
-            fontSize: '1.1rem'
-          }}
-        >
-          إنشاء حساب جديد
-        </Link>
-      </div>
-
-      <div style={{ marginTop: '60px' }}>
-        <h2 style={{ fontSize: '2rem', marginBottom: '30px' }}>مميزات الأكاديمية</h2>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px', marginTop: '40px' }}>
-          <div style={{ padding: '30px', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '15px' }}>معلمون متخصصون</h3>
-            <p>فريق من المعلمين والمعلمات المجازين في القراءات</p>
-          </div>
-
-          <div style={{ padding: '30px', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '15px' }}>حصص مباشرة</h3>
-            <p>دروس تفاعلية عبر الفيديو والصوت</p>
-          </div>
-
-          <div style={{ padding: '30px', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '15px' }}>مرونة في المواعيد</h3>
-            <p>اختر الأوقات التي تناسبك</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header */}
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center">
+              <BookOpen className="h-8 w-8 text-blue-600 ml-3" />
+              <h1 className="text-2xl font-bold text-gray-900">أكاديمية الماهرون</h1>
+            </div>
+            <div className="flex space-x-4 space-x-reverse">
+              <Button
+                variant="outline"
+                onClick={() => router.push('/auth')}
+              >
+                تسجيل الدخول
+              </Button>
+              <Button
+                onClick={() => router.push('/auth')}
+              >
+                إنشاء حساب
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div style={{ marginTop: '60px', padding: '40px', backgroundColor: '#f8fafc', borderRadius: '12px' }}>
-        <h2 style={{ fontSize: '2rem', marginBottom: '20px' }}>ابدأ رحلتك التعليمية اليوم</h2>
-        <p style={{ fontSize: '1.2rem', marginBottom: '30px' }}>
-          انضم إلى آلاف الطلاب الذين يتعلمون القرآن الكريم معنا
-        </p>
-        <Link
-          href="/auth"
-          style={{
-            backgroundColor: '#dc2626',
-            color: 'white',
-            padding: '20px 40px',
-            borderRadius: '8px',
-            textDecoration: 'none',
-            fontSize: '1.2rem',
-            fontWeight: 'bold'
-          }}
-        >
-          ابدأ الآن مجاناً
-        </Link>
-      </div>
-
-      {/* Debug Links */}
-      <div style={{ marginTop: '40px', padding: '20px', backgroundColor: '#f1f5f9', borderRadius: '8px' }}>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: '15px', color: '#475569' }}>روابط التشخيص:</h3>
-        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/diagnose" style={{ color: '#2563eb', textDecoration: 'underline' }}>
-            صفحة التشخيص المتقدمة
-          </Link>
-          <Link href="/static" style={{ color: '#2563eb', textDecoration: 'underline' }}>
-            الصفحة الثابتة
-          </Link>
-          <Link href="/debug" style={{ color: '#2563eb', textDecoration: 'underline' }}>
-            صفحة Debug
-          </Link>
-          <Link href="/test" style={{ color: '#2563eb', textDecoration: 'underline' }}>
-            صفحة الاختبار
-          </Link>
+      {/* Hero Section */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            تعلم القرآن الكريم والتجويد عبر الإنترنت
+          </h2>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            منصة تعليمية متطورة تجمع بين المعلمين المتخصصين والطلاب الراغبين في تعلم القرآن الكريم وأحكام التجويد
+          </p>
+          <div className="flex justify-center space-x-4 space-x-reverse">
+            <Button
+              size="lg"
+              onClick={() => router.push('/auth')}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              ابدأ التعلم الآن
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => router.push('/auth')}
+            >
+              انضم كمعلم
+            </Button>
+          </div>
         </div>
-      </div>
+
+        {/* Features */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+          <Card>
+            <CardHeader>
+              <Users className="h-8 w-8 text-blue-600 mb-2" />
+              <CardTitle>معلمون متخصصون</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                فريق من المعلمين والمعلمات المجازين في القراءات والتجويد
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <Clock className="h-8 w-8 text-green-600 mb-2" />
+              <CardTitle>مرونة في المواعيد</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                اختر الأوقات التي تناسبك من جدول حصص مرن ومتنوع
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <BookOpen className="h-8 w-8 text-purple-600 mb-2" />
+              <CardTitle>منهج شامل</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                برنامج تعليمي متكامل يغطي جميع جوانب تعلم القرآن والتجويد
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <Award className="h-8 w-8 text-orange-600 mb-2" />
+              <CardTitle>شهادات معتمدة</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                احصل على شهادات معتمدة عند إتمام المستويات التعليمية
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* CTA Section */}
+        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">
+            ابدأ رحلتك التعليمية اليوم
+          </h3>
+          <p className="text-gray-600 mb-6">
+            انضم إلى آلاف الطلاب الذين يتعلمون القرآن الكريم معنا
+          </p>
+          <Button
+            size="lg"
+            onClick={() => router.push('/auth')}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            سجل الآن مجاناً
+          </Button>
+        </div>
+
+        {/* Debug Links - يمكن إزالتها لاحقاً */}
+        <div className="mt-8 text-center">
+          <div className="flex justify-center space-x-4 space-x-reverse text-sm">
+            <a href="/diagnose" className="text-blue-600 hover:underline">صفحة التشخيص</a>
+            <a href="/static" className="text-blue-600 hover:underline">الصفحة الثابتة</a>
+            <a href="/debug" className="text-blue-600 hover:underline">صفحة Debug</a>
+            <a href="/simple" className="text-blue-600 hover:underline">الصفحة البسيطة</a>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
