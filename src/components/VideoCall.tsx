@@ -11,6 +11,8 @@ import {
   Settings
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { io, Socket } from 'socket.io-client';
+import SimplePeer from 'simple-peer';
 
 interface VideoCallProps {
   roomId: string;
@@ -31,7 +33,9 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
-  const peerRef = useRef<any>(null);
+  const peerRef = useRef<SimplePeer.Instance | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const remoteUserIdRef = useRef<string | null>(null);
 
   const { toast } = useToast();
 
@@ -56,22 +60,72 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
         localVideoRef.current.srcObject = stream;
       }
 
+      // Initialize Socket.io connection
+      socketRef.current = io();
+
+      // Join the room
+      socketRef.current.emit('join-room', {
+        roomId,
+        userName,
+        userType
+      });
+
+      // Handle socket events
+      socketRef.current.on('user-joined', (data) => {
+        console.log('User joined:', data);
+        setRemoteUserName(data.userName);
+
+        // Create peer connection as initiator
+        createPeer(data.userId, stream);
+      });
+
+      socketRef.current.on('room-users', (users) => {
+        console.log('Room users:', users);
+        if (users.length > 0) {
+          const remoteUser = users[0];
+          setRemoteUserName(remoteUser.userName);
+          remoteUserIdRef.current = remoteUser.userId;
+        }
+      });
+
+      socketRef.current.on('offer', (data) => {
+        console.log('Received offer from:', data.sender);
+        handleOffer(data.offer, data.sender, stream);
+      });
+
+      socketRef.current.on('answer', (data) => {
+        console.log('Received answer from:', data.sender);
+        if (peerRef.current) {
+          peerRef.current.signal(data.answer);
+        }
+      });
+
+      socketRef.current.on('ice-candidate', (data) => {
+        console.log('Received ICE candidate from:', data.sender);
+        if (peerRef.current) {
+          peerRef.current.signal(data.candidate);
+        }
+      });
+
+      socketRef.current.on('user-left', (data) => {
+        console.log('User left:', data);
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = null;
+        }
+        setRemoteUserName('');
+        if (peerRef.current) {
+          peerRef.current.destroy();
+          peerRef.current = null;
+        }
+      });
+
       setConnectionStatus('connected');
       setIsConnected(true);
-      setRemoteUserName(userType === 'student' ? 'المعلم' : 'الطالب');
-
-      // Simulate remote connection after 2 seconds
-      setTimeout(() => {
-        if (remoteVideoRef.current && localStreamRef.current) {
-          // For demo purposes, show local stream in remote video too
-          remoteVideoRef.current.srcObject = localStreamRef.current;
-        }
-      }, 2000);
 
       toast({
-        title: "تم الاتصال بنجاح",
-        description: "يمكنك الآن بدء المكالمة",
-        className: "bg-green-600 text-white"
+        title: "تم الاتصال بالخادم",
+        description: "في انتظار المستخدم الآخر...",
+        className: "bg-blue-600 text-white"
       });
 
     } catch (error) {
@@ -85,12 +139,87 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
     }
   };
 
+  const createPeer = (remoteUserId: string, stream: MediaStream) => {
+    const peer = new SimplePeer({
+      initiator: true,
+      trickle: false,
+      stream: stream
+    });
+
+    peer.on('signal', (signal) => {
+      socketRef.current?.emit('offer', {
+        target: remoteUserId,
+        offer: signal
+      });
+    });
+
+    peer.on('stream', (remoteStream) => {
+      console.log('Received remote stream');
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStream;
+      }
+      toast({
+        title: "تم الاتصال بنجاح!",
+        description: "المكالمة نشطة الآن",
+        className: "bg-green-600 text-white"
+      });
+    });
+
+    peer.on('error', (error) => {
+      console.error('Peer error:', error);
+    });
+
+    peerRef.current = peer;
+    remoteUserIdRef.current = remoteUserId;
+  };
+
+  const handleOffer = (offer: any, senderId: string, stream: MediaStream) => {
+    const peer = new SimplePeer({
+      initiator: false,
+      trickle: false,
+      stream: stream
+    });
+
+    peer.on('signal', (signal) => {
+      socketRef.current?.emit('answer', {
+        target: senderId,
+        answer: signal
+      });
+    });
+
+    peer.on('stream', (remoteStream) => {
+      console.log('Received remote stream');
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStream;
+      }
+      toast({
+        title: "تم الاتصال بنجاح!",
+        description: "المكالمة نشطة الآن",
+        className: "bg-green-600 text-white"
+      });
+    });
+
+    peer.on('error', (error) => {
+      console.error('Peer error:', error);
+    });
+
+    peer.signal(offer);
+    peerRef.current = peer;
+    remoteUserIdRef.current = senderId;
+  };
+
   const cleanup = () => {
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
     }
     if (peerRef.current) {
       peerRef.current.destroy();
+      peerRef.current = null;
+    }
+    if (socketRef.current) {
+      socketRef.current.emit('leave-room');
+      socketRef.current.disconnect();
+      socketRef.current = null;
     }
   };
 

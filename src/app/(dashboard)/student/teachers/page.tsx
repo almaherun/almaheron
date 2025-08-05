@@ -19,7 +19,7 @@ import { collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, array
 import VideoCall from '@/components/VideoCall';
 
 
-const TeacherList = ({ teachers, isLoading, onFollowToggle, onStartCall, localFollowedTeachers, followingInProgress }: { teachers: User[], isLoading: boolean, onFollowToggle: (teacherId: string) => void, onStartCall: (teacher: User) => void, localFollowedTeachers: string[], followingInProgress: string | null }) => {
+const TeacherList = ({ teachers, isLoading, onStartCall, canCall }: { teachers: User[], isLoading: boolean, onStartCall: (teacher: User) => void, canCall: boolean }) => {
     if (isLoading) {
         return (
             <div className="space-y-4 p-4">
@@ -34,14 +34,10 @@ const TeacherList = ({ teachers, isLoading, onFollowToggle, onStartCall, localFo
         return <p className="text-center text-muted-foreground py-8">لا يوجد معلمون لعرضهم.</p>;
     }
     
-    const handleFollowClick = (e: React.MouseEvent, teacherId: string) => {
+    const handleCallClick = (e: React.MouseEvent, teacher: User) => {
         e.preventDefault();
         e.stopPropagation();
-        onFollowToggle(teacherId);
-    }
-
-    const isFollowing = (teacherId: string) => {
-        return localFollowedTeachers.includes(teacherId);
+        onStartCall(teacher);
     }
 
     return (
@@ -59,44 +55,16 @@ const TeacherList = ({ teachers, isLoading, onFollowToggle, onStartCall, localFo
                                 <p className="text-sm text-muted-foreground">{teacher.specialty}</p>
                             </div>
                         </Link>
-                        <div className="flex gap-2">
-                            {isFollowing(teacher.uid) && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        onStartCall(teacher);
-                                    }}
-                                    className="flex items-center gap-1"
-                                >
-                                    <Video className="h-4 w-4" />
-                                    <span>اتصال</span>
-                                </Button>
-                            )}
-                            <Button
-                                variant={isFollowing(teacher.uid) ? "secondary" : "default"}
-                                size="sm"
-                                onClick={(e) => handleFollowClick(e, teacher.uid)}
-                                disabled={followingInProgress === teacher.uid}
-                                className="w-28"
-                            >
-                                {followingInProgress === teacher.uid ? (
-                                    <RotateCw className="h-4 w-4 animate-spin" />
-                                ) : isFollowing(teacher.uid) ? (
-                                    <>
-                                        <Check className="ml-1 h-4 w-4" />
-                                        <span>تتابعه</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Plus className="ml-1 h-4 w-4" />
-                                        <span>متابعة</span>
-                                    </>
-                                )}
-                            </Button>
-                        </div>
+                        <Button
+                            variant={canCall ? "default" : "secondary"}
+                            size="sm"
+                            onClick={(e) => handleCallClick(e, teacher)}
+                            disabled={!canCall}
+                            className="flex items-center gap-2"
+                        >
+                            <Video className="h-4 w-4" />
+                            <span>{canCall ? 'اتصال' : 'انتهت الصلاحية'}</span>
+                        </Button>
                     </div>
                     {index < teachers.length - 1 && <Separator />}
                 </div>
@@ -110,19 +78,29 @@ export default function TeachersPage() {
     const [teacherList, setTeacherList] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState('all');
-    const [followingInProgress, setFollowingInProgress] = useState<string | null>(null);
-    const [localFollowedTeachers, setLocalFollowedTeachers] = useState<string[]>([]);
     const [isInCall, setIsInCall] = useState(false);
     const [currentCall, setCurrentCall] = useState<{roomId: string, teacherName: string} | null>(null);
     const { toast } = useToast();
 
-    // تحديث الحالة المحلية عند تغيير بيانات الطالب
-    useEffect(() => {
-        if (student?.followedTeachers) {
-            setLocalFollowedTeachers(student.followedTeachers);
+    // Check if student can make calls (subscription not expired)
+    const canMakeCalls = () => {
+        if (!student) return false;
+
+        // Check if subscription is still valid
+        if ((student as any).subscriptionEndDate) {
+            const endDate = (student as any).subscriptionEndDate.toDate ? (student as any).subscriptionEndDate.toDate() : new Date((student as any).subscriptionEndDate);
+            return endDate > new Date();
         }
-    }, [student?.followedTeachers]);
+
+        // Check if trial is still valid
+        if ((student as any).trialEndDate) {
+            const trialEnd = (student as any).trialEndDate.toDate ? (student as any).trialEndDate.toDate() : new Date((student as any).trialEndDate);
+            return trialEnd > new Date();
+        }
+
+        // Default: allow calls (can be changed based on business logic)
+        return true;
+    };
 
     useEffect(() => {
         const q = query(
@@ -138,49 +116,7 @@ export default function TeachersPage() {
         return () => unsubscribe();
     }, [student?.gender]);
     
-    const handleFollowToggle = async (teacherId: string) => {
-        if (!student) return;
-        setFollowingInProgress(teacherId);
 
-        const studentRef = doc(db, 'users', student.id);
-        const isCurrentlyFollowing = localFollowedTeachers.includes(teacherId);
-
-        try {
-            if (isCurrentlyFollowing) {
-                // تحديث فوري للحالة المحلية أولاً
-                const updatedFollowed = localFollowedTeachers.filter(id => id !== teacherId);
-                setLocalFollowedTeachers(updatedFollowed);
-
-                // ثم تحديث قاعدة البيانات
-                await updateDoc(studentRef, {
-                    followedTeachers: arrayRemove(teacherId)
-                });
-
-                toast({ title: 'تم إلغاء المتابعة' });
-            } else {
-                // تحديث فوري للحالة المحلية أولاً
-                const updatedFollowed = [...localFollowedTeachers, teacherId];
-                setLocalFollowedTeachers(updatedFollowed);
-
-                // ثم تحديث قاعدة البيانات
-                await updateDoc(studentRef, {
-                    followedTeachers: arrayUnion(teacherId)
-                });
-
-                toast({ title: 'تمت المتابعة بنجاح!' });
-            }
-
-        } catch (error) {
-            console.error("Follow toggle error: ", error);
-            // في حالة الخطأ، إرجاع الحالة المحلية للوضع السابق
-            if (student?.followedTeachers) {
-                setLocalFollowedTeachers(student.followedTeachers);
-            }
-            toast({ title: 'خطأ', description: 'لم نتمكن من إتمام العملية.', variant: 'destructive' });
-        } finally {
-            setFollowingInProgress(null);
-        }
-    };
 
     const generateRoomId = () => {
         return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -239,15 +175,7 @@ export default function TeachersPage() {
     const filteredTeachers = teacherList.filter(teacher => {
         const matchesSearch = teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                               (teacher.specialty || '').toLowerCase().includes(searchTerm.toLowerCase());
-
-        const isFollowing = localFollowedTeachers.includes(teacher.uid);
-
-        const matchesTab = 
-            activeTab === 'all' ||
-            (activeTab === 'following' && isFollowing) ||
-            (activeTab === 'explore' && !isFollowing);
-
-        return matchesSearch && matchesTab;
+        return matchesSearch;
     });
 
     // Show video call interface
@@ -263,35 +191,35 @@ export default function TeachersPage() {
     }
 
     return (
-        <div className="space-y-4">
-            <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="ابحث عن معلم بالاسم أو التخصص..." 
-                    className="pr-10" 
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                />
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-3xl font-bold">المعلمون</h1>
+                    <p className="text-gray-600 mt-1">
+                        {canMakeCalls() ? 'يمكنك الاتصال بأي معلم' : 'انتهت صلاحية الاشتراك - لا يمكن إجراء مكالمات'}
+                    </p>
+                </div>
+                <div className="relative">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="ابحث عن معلم بالاسم أو التخصص..."
+                        className="pr-10 w-64"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                    />
+                </div>
             </div>
-             <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="all">الكل</TabsTrigger>
-                    <TabsTrigger value="following">المتابعون</TabsTrigger>
-                    <TabsTrigger value="explore">استكشاف</TabsTrigger>
-                </TabsList>
-                <Card className="mt-4">
-                    <CardContent className="p-0">
-                         <TeacherList
-                            teachers={filteredTeachers}
-                            isLoading={isLoading || userLoading}
-                            onFollowToggle={handleFollowToggle}
-                            onStartCall={startCall}
-                            localFollowedTeachers={localFollowedTeachers}
-                            followingInProgress={followingInProgress}
-                         />
-                    </CardContent>
-                </Card>
-            </Tabs>
+
+            <Card>
+                <CardContent className="p-0">
+                     <TeacherList
+                        teachers={filteredTeachers}
+                        isLoading={isLoading || userLoading}
+                        onStartCall={startCall}
+                        canCall={canMakeCalls()}
+                     />
+                </CardContent>
+            </Card>
         </div>
     )
 }
