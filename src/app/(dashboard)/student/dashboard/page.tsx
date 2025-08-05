@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Users, BookCopy, BarChart3, Loader2 } from 'lucide-react';
+import { Users, BookCopy, ChartColumn, LoaderCircle } from 'lucide-react';
 import { Session, User } from '@/lib/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Link from 'next/link';
@@ -153,7 +153,7 @@ export default function StudentDashboardPage() {
     const statCards = [
         { title: 'المعلمون المتابعون', value: stats?.followedTeachers ?? 0, icon: Users, href: '/student/teachers' },
         { title: 'الحلقات هذا الأسبوع', value: stats?.sessionsThisWeek ?? 0, icon: BookCopy, href: '/student/sessions' },
-        { title: 'المعدل اليومي', value: stats?.dailyAverage ?? '0', icon: BarChart3, href: '/student/sessions' },
+        { title: 'المعدل اليومي', value: stats?.dailyAverage ?? '0', icon: ChartColumn, href: '/student/sessions' },
     ];
 
     return (

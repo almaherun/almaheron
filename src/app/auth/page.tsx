@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, UserCheck, GraduationCap, BookOpen, Camera, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
+import { User, UserCheck, GraduationCap, BookOpen, Camera, Eye, EyeOff, LoaderCircle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
@@ -83,7 +83,7 @@ export default function AuthPage() {
   // if (loading) {
   //   return (
   //     <div className="min-h-screen flex items-center justify-center">
-  //       <Loader2 className="h-8 w-8 animate-spin" />
+  //       <LoaderCircle className="h-8 w-8 animate-spin" />
   //     </div>
   //   );
   // }
@@ -299,7 +299,7 @@ function LoginForm({ setIsLogin }: { setIsLogin: (value: boolean) => void }) {
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              <LoaderCircle className="ml-2 h-4 w-4 animate-spin" />
               جاري التحقق...
             </>
           ) : (
@@ -708,7 +708,7 @@ function RegisterForm({ setIsLogin, setEmailSent }: {
         >
           {isLoading ? (
             <>
-              <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              <LoaderCircle className="ml-2 h-4 w-4 animate-spin" />
               جاري إنشاء الحساب...
             </>
           ) : (
@@ -916,7 +916,7 @@ function EmailVerificationPage() {
                 >
                   {isVerifying ? (
                     <>
-                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                      <LoaderCircle className="ml-2 h-4 w-4 animate-spin" />
                       جاري التحقق...
                     </>
                   ) : (
@@ -932,7 +932,7 @@ function EmailVerificationPage() {
                 >
                   {isResending ? (
                     <>
-                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                      <LoaderCircle className="ml-2 h-4 w-4 animate-spin" />
                       جاري الإرسال...
                     </>
                   ) : (

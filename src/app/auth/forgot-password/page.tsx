@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, ArrowRight } from "lucide-react";
+import { LoaderCircle, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { auth } from '@/lib/firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
@@ -131,7 +131,7 @@ export default function ForgotPasswordPage() {
                 )}
               />
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                {isSubmitting && <LoaderCircle className="ml-2 h-4 w-4 animate-spin" />}
                 {isSubmitting ? 'جاري الإرسال...' : 'إرسال رابط إعادة التعيين'}
               </Button>
             </form>

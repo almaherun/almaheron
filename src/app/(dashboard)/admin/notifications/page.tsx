@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Check, X, Eye, Loader2, ArrowRight } from 'lucide-react';
+import { Check, X, Eye, LoaderCircle, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
     AlertDialog,
@@ -95,7 +95,7 @@ function NotificationCard({ notification, onAction }: { notification: Notificati
                     {isApprovalRequest && (
                          <div className="flex flex-col sm:flex-row gap-2 mt-3">
                             <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto" onClick={handleApproval} disabled={isApproving || isRejecting}>
-                                {isApproving ? <Loader2 className="ml-1 h-4 w-4 animate-spin" /> : <Check className="ml-1 h-4 w-4" />}
+                                {isApproving ? <LoaderCircle className="ml-1 h-4 w-4 animate-spin" /> : <Check className="ml-1 h-4 w-4" />}
                                 موافقة
                             </Button>
                              <Button size="sm" variant="destructive" className="w-full sm:w-auto" onClick={() => setIsRejecting(true)} disabled={isApproving || isRejecting}>
@@ -130,7 +130,7 @@ function NotificationCard({ notification, onAction }: { notification: Notificati
 
 function NotificationList({ notifications, onAction, isLoading }: { notifications: Notification[], onAction: (id: string, action: 'approve' | 'reject', payload?: any) => void, isLoading: boolean }) {
     if (isLoading) {
-        return <div className="text-center p-8"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" /></div>;
+        return <div className="text-center p-8"><LoaderCircle className="mx-auto h-8 w-8 animate-spin text-primary" /></div>;
     }
     
     return (

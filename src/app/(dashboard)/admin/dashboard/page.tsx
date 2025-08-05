@@ -8,7 +8,7 @@ import { Users, Ticket, User as UserIcon, UserCheck } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { User } from '@/lib/types';
-import { Loader2 } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 
 const COLORS = ['#1E3A8A', '#10B981', '#F59E0B']; // Primary, Accent, Yellow
 
@@ -35,7 +35,7 @@ export default function AdminDashboard() {
     }, []);
     
     if (loading) {
-        return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>
+        return <div className="flex justify-center items-center h-full"><LoaderCircle className="h-8 w-8 animate-spin" /></div>
     }
 
     const statCards = [

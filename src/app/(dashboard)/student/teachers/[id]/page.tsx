@@ -10,7 +10,7 @@ import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firest
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Check, Star, Plus, Loader2 } from 'lucide-react';
+import { ArrowRight, Check, Star, Plus, LoaderCircle } from 'lucide-react';
 import Loading from '@/app/loading';
 import { useToast } from '@/hooks/use-toast';
 
@@ -110,7 +110,7 @@ export default function TeacherProfilePage() {
                     onClick={handleFollowToggle}
                     disabled={isFollowLoading}
                 >
-                    {isFollowLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (isFollowing ? <Check className="ml-2 h-4 w-4" /> : <Plus className="ml-2 h-4 w-4" />)}
+                    {isFollowLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : (isFollowing ? <Check className="ml-2 h-4 w-4" /> : <Plus className="ml-2 h-4 w-4" />)}
                     {isFollowing ? 'تتابعه' : 'متابعة'}
                 </Button>
 
