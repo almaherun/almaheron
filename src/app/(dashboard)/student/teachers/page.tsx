@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useUserData, UserData } from '@/hooks/useUser';
 import { collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp } from 'firebase/firestore';
-import VideoCall from '@/components/VideoCall';
+import ModernVideoCall from '@/components/ModernVideoCall';
 import WaitingForApproval from '@/components/WaitingForApproval';
 import { generateRoomId } from '@/lib/firebaseSignaling';
 import { createFirestoreCallNotificationManager, FirestoreCallNotificationManager } from '@/lib/callNotificationsFirestore';
@@ -142,12 +142,14 @@ export default function TeachersPage() {
             const callManager = createFirestoreCallNotificationManager(teacher.uid);
 
             // إرسال طلب المكالمة للمعلم
+            console.log('Sending call request to teacher:', teacher.uid, 'from student:', student.id);
             const requestId = await callManager.sendCallRequest(
                 student.id,
                 student.name,
                 teacher.name,
                 roomId
             );
+            console.log('Call request sent with ID:', requestId);
 
             // عرض شاشة انتظار الموافقة
             setWaitingForApproval({
@@ -260,14 +262,13 @@ export default function TeachersPage() {
 
     if (isInCall && currentCall) {
         return (
-            <div className="fixed inset-0 z-50">
-                <VideoCall
-                    roomId={currentCall.roomId}
-                    userName={student?.name || 'طالب'}
-                    userType="student"
-                    onCallEnd={endCall}
-                />
-            </div>
+            <ModernVideoCall
+                roomId={currentCall.roomId}
+                userName={student?.name || 'طالب'}
+                userType="student"
+                onCallEnd={endCall}
+                remoteUserName={currentCall.teacherName}
+            />
         );
     }
 

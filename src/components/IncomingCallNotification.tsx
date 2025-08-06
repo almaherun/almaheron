@@ -83,52 +83,56 @@ export default function IncomingCallNotification({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+    <div className="fixed inset-0 bg-gradient-to-br from-green-900 via-emerald-900 to-teal-900 flex items-center justify-center z-50">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+      </div>
+
+      <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl border border-white/20">
         {/* Header */}
         <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-2xl font-bold text-white mb-2">
             مكالمة واردة
           </h2>
-          <div className="text-red-500 font-medium">
+          <div className="text-green-300 font-medium text-lg">
             {formatTime(timeLeft)}
           </div>
         </div>
 
         {/* Student Info */}
         <div className="flex flex-col items-center mb-8">
-          <div className="relative mb-4">
-            <Avatar className="h-24 w-24 border-4 border-blue-500">
+          <div className="relative mb-6">
+            <Avatar className="h-32 w-32 border-4 border-white/30 shadow-2xl">
               <AvatarImage src="" alt={callRequest.studentName} />
-              <AvatarFallback className="text-2xl bg-blue-100 text-blue-600">
-                <User className="h-12 w-12" />
+              <AvatarFallback className="text-3xl bg-white/20 text-white">
+                <User className="h-16 w-16" />
               </AvatarFallback>
             </Avatar>
-            {/* Pulsing ring animation */}
-            <div className="absolute inset-0 rounded-full border-4 border-blue-500 animate-ping opacity-75"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-blue-400 animate-ping opacity-50" style={{animationDelay: '0.5s'}}></div>
+            {/* Multiple pulsing rings */}
+            <div className="absolute inset-0 rounded-full border-4 border-green-400 animate-ping opacity-75"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-emerald-400 animate-ping opacity-50" style={{animationDelay: '0.5s'}}></div>
+            <div className="absolute inset-0 rounded-full border-4 border-teal-400 animate-ping opacity-25" style={{animationDelay: '1s'}}></div>
           </div>
-          
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+
+          <h3 className="text-3xl font-bold text-white mb-2">
             {callRequest.studentName}
           </h3>
-          <p className="text-gray-600 dark:text-gray-400">
-            يريد بدء مكالمة فيديو
+          <p className="text-green-200 text-lg">
+            مكالمة فيديو واردة
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-4 justify-center">
+        <div className="flex gap-6 justify-center">
           {/* Reject Button */}
           <Button
             onClick={handleReject}
             disabled={isProcessing}
-            variant="destructive"
             size="lg"
-            className="flex-1 h-14 rounded-full bg-red-500 hover:bg-red-600 text-white font-bold text-lg"
+            className="w-20 h-20 rounded-full bg-red-500/80 hover:bg-red-500 backdrop-blur-sm text-white font-bold border border-red-400/30 shadow-lg"
           >
-            <PhoneOff className="h-6 w-6 mr-2" />
-            رفض
+            <PhoneOff className="h-8 w-8" />
           </Button>
 
           {/* Accept Button */}
@@ -136,10 +140,9 @@ export default function IncomingCallNotification({
             onClick={handleAccept}
             disabled={isProcessing}
             size="lg"
-            className="flex-1 h-14 rounded-full bg-green-500 hover:bg-green-600 text-white font-bold text-lg"
+            className="w-20 h-20 rounded-full bg-green-500/80 hover:bg-green-500 backdrop-blur-sm text-white font-bold border border-green-400/30 shadow-lg"
           >
-            <Phone className="h-6 w-6 mr-2" />
-            قبول
+            <Phone className="h-8 w-8" />
           </Button>
         </div>
 

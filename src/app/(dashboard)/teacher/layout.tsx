@@ -42,7 +42,7 @@ import { useUserData } from '@/hooks/useUser';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import IncomingCallNotification from '@/components/IncomingCallNotification';
-import VideoCall from '@/components/VideoCall';
+import ModernVideoCall from '@/components/ModernVideoCall';
 import { createFirestoreCallNotificationManager, CallRequest } from '@/lib/callNotificationsFirestore';
 
 
@@ -104,17 +104,22 @@ function TeacherLayoutContent({
   // إعداد مدير إشعارات المكالمات
   React.useEffect(() => {
     if (userData && userData.type === 'teacher') {
-      const manager = createFirestoreCallNotificationManager(userData.id);
+      console.log('Setting up call manager for teacher:', userData.id);
+      const teacherId = userData.id;
+      const manager = createFirestoreCallNotificationManager(teacherId);
       setCallManager(manager);
 
       // الاستماع لطلبات المكالمات
       const unsubscribe = manager.listenForCallRequests((requests) => {
+        console.log('Received call requests:', requests);
         const pendingRequest = requests.find(req => req.status === 'pending');
         if (pendingRequest && !incomingCall) {
+          console.log('Setting incoming call:', pendingRequest);
           setIncomingCall(pendingRequest);
           // تشغيل صوت المكالمة (اختياري)
           // playCallSound();
         } else if (!pendingRequest && incomingCall) {
+          console.log('Clearing incoming call');
           setIncomingCall(null);
         }
       });
@@ -122,7 +127,7 @@ function TeacherLayoutContent({
       return () => unsubscribe();
     }
     return () => {}; // إضافة return فارغ للحالات الأخرى
-  }, [userData, incomingCall]);
+  }, [userData]);
 
 
   const handleLogout = async () => {
@@ -176,14 +181,13 @@ function TeacherLayoutContent({
   // عرض المكالمة النشطة
   if (isInCall && currentCall) {
     return (
-      <div className="fixed inset-0 z-50">
-        <VideoCall
-          roomId={currentCall.roomId}
-          userName={userData.name || 'معلم'}
-          userType="teacher"
-          onCallEnd={handleEndCall}
-        />
-      </div>
+      <ModernVideoCall
+        roomId={currentCall.roomId}
+        userName={userData.name || 'معلم'}
+        userType="teacher"
+        onCallEnd={handleEndCall}
+        remoteUserName={currentCall.studentName}
+      />
     );
   }
 

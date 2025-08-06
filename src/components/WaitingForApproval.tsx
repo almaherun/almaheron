@@ -83,14 +83,19 @@ export default function WaitingForApproval({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center z-50">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+      </div>
+
+      <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl border border-white/20">
         {/* Header */}
         <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-            في انتظار الموافقة
+          <h2 className="text-2xl font-bold text-white mb-2">
+            جاري الاتصال...
           </h2>
-          <div className="flex items-center justify-center gap-2 text-blue-500 font-medium">
+          <div className="flex items-center justify-center gap-2 text-blue-300 font-medium">
             <Clock className="h-4 w-4" />
             {formatTime(timeLeft)}
           </div>
@@ -98,33 +103,33 @@ export default function WaitingForApproval({
 
         {/* Teacher Info */}
         <div className="flex flex-col items-center mb-8">
-          <div className="relative mb-4">
-            <Avatar className="h-24 w-24 border-4 border-blue-500">
+          <div className="relative mb-6">
+            <Avatar className="h-32 w-32 border-4 border-white/30 shadow-2xl">
               <AvatarImage src={teacherAvatar} alt={teacherName} />
-              <AvatarFallback className="text-2xl bg-blue-100 text-blue-600">
-                <User className="h-12 w-12" />
+              <AvatarFallback className="text-3xl bg-white/20 text-white">
+                <User className="h-16 w-16" />
               </AvatarFallback>
             </Avatar>
-            {/* Pulsing ring animation */}
-            <div className="absolute inset-0 rounded-full border-4 border-blue-500 animate-pulse opacity-75"></div>
+            {/* Multiple pulsing rings */}
+            <div className="absolute inset-0 rounded-full border-4 border-blue-400 animate-ping opacity-75"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-purple-400 animate-ping opacity-50" style={{animationDelay: '0.5s'}}></div>
+            <div className="absolute inset-0 rounded-full border-4 border-indigo-400 animate-ping opacity-25" style={{animationDelay: '1s'}}></div>
           </div>
-          
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+
+          <h3 className="text-3xl font-bold text-white mb-2">
             {teacherName}
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 text-center">
-            تم إرسال طلب المكالمة
-            <br />
-            في انتظار الموافقة...
+          <p className="text-blue-200 text-center text-lg">
+            في انتظار الرد...
           </p>
         </div>
 
         {/* Status Indicator */}
-        <div className="flex items-center justify-center mb-6">
-          <div className="flex gap-2">
-            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
-            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+        <div className="flex items-center justify-center mb-8">
+          <div className="flex gap-3">
+            <div className="w-4 h-4 bg-blue-400 rounded-full animate-bounce"></div>
+            <div className="w-4 h-4 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            <div className="w-4 h-4 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
           </div>
         </div>
 
@@ -133,12 +138,11 @@ export default function WaitingForApproval({
           <Button
             onClick={handleCancel}
             disabled={isProcessing}
-            variant="destructive"
             size="lg"
-            className="h-14 px-8 rounded-full bg-red-500 hover:bg-red-600 text-white font-bold text-lg"
+            className="h-16 px-10 rounded-full bg-red-500/80 hover:bg-red-500 backdrop-blur-sm text-white font-bold text-lg border border-red-400/30 shadow-lg"
           >
-            <PhoneOff className="h-6 w-6 mr-2" />
-            إلغاء المكالمة
+            <PhoneOff className="h-7 w-7 mr-3" />
+            إنهاء
           </Button>
         </div>
 
