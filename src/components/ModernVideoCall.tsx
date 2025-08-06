@@ -248,8 +248,11 @@ export default function ModernVideoCall({
         const remoteUser = existingUsers[0];
         remoteUserIdRef.current = remoteUser.id;
 
-        // الطالب ينتظر المعلم ليبدأ الاتصال
-        if (userType === 'student') {
+        // المعلم يبدأ الاتصال دائماً
+        if (userType === 'teacher') {
+          console.log('👨‍🏫 Teacher initiating call to existing student');
+          createPeer(remoteUser.id, stream);
+        } else {
           console.log('👨‍🎓 Student waiting for teacher to initiate');
         }
       }
@@ -293,10 +296,25 @@ export default function ModernVideoCall({
 
     peer.on('stream', (remoteStream) => {
       console.log('🎥 Received remote stream from:', remoteUserId);
+      console.log('📊 Stream details:', {
+        id: remoteStream.id,
+        active: remoteStream.active,
+        videoTracks: remoteStream.getVideoTracks().length,
+        audioTracks: remoteStream.getAudioTracks().length
+      });
+
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remoteStream;
         console.log('📺 Set remote video stream');
+
+        // إخفاء placeholder
+        const placeholder = document.getElementById('video-placeholder');
+        if (placeholder) {
+          placeholder.style.display = 'none';
+          console.log('🙈 Hidden video placeholder');
+        }
       }
+
       toast({
         title: "تم الاتصال بنجاح!",
         description: "المكالمة نشطة الآن",
@@ -343,10 +361,25 @@ export default function ModernVideoCall({
 
     peer.on('stream', (remoteStream) => {
       console.log('🎥 Received remote stream from:', senderId);
+      console.log('📊 Stream details:', {
+        id: remoteStream.id,
+        active: remoteStream.active,
+        videoTracks: remoteStream.getVideoTracks().length,
+        audioTracks: remoteStream.getAudioTracks().length
+      });
+
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remoteStream;
         console.log('📺 Set remote video stream');
+
+        // إخفاء placeholder
+        const placeholder = document.getElementById('video-placeholder');
+        if (placeholder) {
+          placeholder.style.display = 'none';
+          console.log('🙈 Hidden video placeholder');
+        }
       }
+
       toast({
         title: "تم الاتصال بنجاح!",
         description: "المكالمة نشطة الآن",
@@ -516,23 +549,52 @@ export default function ModernVideoCall({
               playsInline
               muted={false}
               className="w-full h-full object-cover"
+              onLoadedMetadata={() => {
+                console.log('📺 Remote video loaded');
+                // إخفاء placeholder عند تحميل الفيديو
+                const placeholder = document.getElementById('video-placeholder');
+                if (placeholder) placeholder.style.display = 'none';
+              }}
+              onError={(e) => console.error('❌ Remote video error:', e)}
             />
 
             {/* Placeholder when no remote video */}
-            {!remoteVideoRef.current?.srcObject && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-                <div className="text-center">
-                  <Avatar className="h-32 w-32 mx-auto mb-4 border-4 border-white/20">
-                    <AvatarImage src={remoteUserAvatar} alt={remoteUserName} />
-                    <AvatarFallback className="text-4xl bg-gray-700 text-white">
-                      <User className="h-16 w-16" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <h3 className="text-2xl font-bold text-white mb-2">{remoteUserName}</h3>
-                  <p className="text-gray-400">في انتظار الاتصال...</p>
+            <div id="video-placeholder" className="absolute inset-0 flex items-center justify-center bg-gray-900">
+              <div className="text-center">
+                <Avatar className="h-32 w-32 mx-auto mb-4 border-4 border-white/20">
+                  <AvatarImage src={remoteUserAvatar} alt={remoteUserName} />
+                  <AvatarFallback className="text-4xl bg-gray-700 text-white">
+                    <User className="h-16 w-16" />
+                  </AvatarFallback>
+                </Avatar>
+                <h3 className="text-2xl font-bold text-white mb-2">{remoteUserName}</h3>
+                <p className="text-gray-400">في انتظار الاتصال...</p>
+
+                {/* Debug info */}
+                <div className="mt-4 text-xs text-gray-500">
+                  <p>حالة الاتصال: {connectionStatus}</p>
+                  <p>متصل: {isConnected ? 'نعم' : 'لا'}</p>
+                  <p>نوع المستخدم: {userType}</p>
+                  <p>معرف الغرفة: {roomId}</p>
                 </div>
+
+                {/* Debug button */}
+                <button
+                  onClick={() => {
+                    console.log('🔍 Debug Info:');
+                    console.log('- Local stream:', localStreamRef.current);
+                    console.log('- Remote stream:', remoteVideoRef.current?.srcObject);
+                    console.log('- Peer:', peerRef.current);
+                    console.log('- Signaling:', signalingRef.current);
+                    console.log('- Connection status:', connectionStatus);
+                    console.log('- Is connected:', isConnected);
+                  }}
+                  className="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded"
+                >
+                  تشخيص
+                </button>
               </div>
-            )}
+            </div>
             
             {/* Local Video (Picture in Picture) */}
             <div className="absolute top-4 right-4 w-32 h-24 md:w-40 md:h-32 bg-gray-800 rounded-lg overflow-hidden shadow-lg border-2 border-white/20">
@@ -542,10 +604,18 @@ export default function ModernVideoCall({
                 playsInline
                 muted
                 className="w-full h-full object-cover"
+                onLoadedMetadata={() => console.log('📺 Local video loaded')}
+                onError={(e) => console.error('❌ Local video error:', e)}
               />
               {!isVideoEnabled && (
                 <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
                   <VideoOff className="h-6 w-6 text-white" />
+                </div>
+              )}
+              {/* Debug info */}
+              {localStreamRef.current && (
+                <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 text-center">
+                  محلي
                 </div>
               )}
             </div>
