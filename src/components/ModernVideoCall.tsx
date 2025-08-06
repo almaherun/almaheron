@@ -473,16 +473,34 @@ export default function ModernVideoCall({
 
       {/* Connecting Overlay */}
       {connectionStatus === 'connecting' && (
-        <div className="absolute inset-0 bg-black bg-opacity-80 backdrop-blur-sm flex items-center justify-center z-30">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center z-30">
           <div className="text-center max-w-md mx-auto px-6">
+            {/* Profile Image */}
             <div className="relative mb-8">
-              <div className="w-20 h-20 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Video className="h-8 w-8 text-blue-500" />
+              <Avatar className="h-32 w-32 mx-auto border-4 border-white/30 shadow-2xl">
+                <AvatarImage src={remoteUserAvatar} alt={remoteUserName} />
+                <AvatarFallback className="text-4xl bg-white/20 text-white">
+                  <User className="h-16 w-16" />
+                </AvatarFallback>
+              </Avatar>
+              {/* Multiple pulsing rings */}
+              <div className="absolute inset-0 rounded-full border-4 border-blue-400 animate-ping opacity-75"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-purple-400 animate-ping opacity-50" style={{animationDelay: '0.5s'}}></div>
+              <div className="absolute inset-0 rounded-full border-4 border-indigo-400 animate-ping opacity-25" style={{animationDelay: '1s'}}></div>
+            </div>
+
+            <h3 className="text-3xl font-bold mb-2 text-white">{remoteUserName}</h3>
+            <p className="text-blue-200 text-xl mb-4">جاري الاتصال...</p>
+            <p className="text-gray-300 text-lg">في انتظار الاتصال...</p>
+
+            {/* Loading dots */}
+            <div className="flex items-center justify-center mt-6">
+              <div className="flex gap-2">
+                <div className="w-3 h-3 bg-blue-400 rounded-full animate-bounce"></div>
+                <div className="w-3 h-3 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                <div className="w-3 h-3 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
               </div>
             </div>
-            <h3 className="text-2xl font-bold mb-2 text-white">جاري الاتصال...</h3>
-            <p className="text-gray-300 text-lg">في انتظار المستخدم الآخر...</p>
           </div>
         </div>
       )}

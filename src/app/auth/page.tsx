@@ -280,7 +280,7 @@ function LoginForm({ setIsLogin }: { setIsLogin: (value: boolean) => void }) {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
+                    className="absolute inset-y-0 left-0 flex items-center px-3 text-gray-400 hover:text-gray-600 password-toggle"
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
@@ -634,7 +634,7 @@ function RegisterForm({ setIsLogin, setEmailSent }: {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
+                      className="absolute inset-y-0 left-0 flex items-center px-3 text-gray-400 hover:text-gray-600 password-toggle"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>

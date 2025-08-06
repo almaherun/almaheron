@@ -2,6 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+/* RTL Support */
+html {
+  direction: rtl;
+}
+
+body {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Fix for loading spinners and icons */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Fix for eye icon in password fields */
+.password-toggle {
+  left: auto !important;
+  right: 0.75rem !important;
+}
+
+/* Fix for loading states */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Fix for modals and overlays */
+.modal-content {
+  text-align: center;
+}
+
+/* Fix for buttons and form elements */
+.btn-rtl {
+  text-align: center;
+}
+
+/* Fix for navigation */
+.nav-rtl {
+  direction: rtl;
+}
+
 body {
   font-family: 'Cairo', sans-serif;
 }

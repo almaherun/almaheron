@@ -24,10 +24,10 @@ export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) 
 
 export function PageLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center loading-container">
       <div className="text-center">
         <LoadingSpinner size="lg" />
-        <p className="mt-4 text-gray-600">جاري التحميل...</p>
+        <p className="mt-4 text-gray-600 text-center">جاري التحميل...</p>
       </div>
     </div>
   );

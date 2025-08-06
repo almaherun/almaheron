@@ -104,8 +104,9 @@ function TeacherLayoutContent({
   // إعداد مدير إشعارات المكالمات
   React.useEffect(() => {
     if (userData && userData.type === 'teacher') {
-      console.log('Setting up call manager for teacher:', userData.id);
-      const teacherId = userData.id;
+      // استخدام uid إذا كان متاح، وإلا استخدام id
+      const teacherId = (userData as any).uid || userData.id;
+      console.log('Setting up call manager for teacher:', teacherId, '(userData.id:', userData.id, ', userData.uid:', (userData as any).uid, ')');
       const manager = createSimpleCallSystem(teacherId);
       setCallManager(manager);
 

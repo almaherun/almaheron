@@ -143,7 +143,13 @@ export default function TeachersPage() {
             const callManager = createSimpleCallSystem(teacher.uid);
 
             // إرسال طلب المكالمة للمعلم
-            console.log('Sending call request to teacher:', teacher.uid, 'from student:', student.id);
+            console.log('📤 Sending call request to teacher:');
+            console.log('   - Teacher UID:', teacher.uid);
+            console.log('   - Teacher ID:', (teacher as any).id);
+            console.log('   - Teacher Name:', teacher.name);
+            console.log('   - Student ID:', student.id);
+            console.log('   - Student Name:', student.name);
+            console.log('   - Room ID:', roomId);
             const requestId = await callManager.sendCallRequest(
                 student.id,
                 student.name,

@@ -82,20 +82,24 @@ export class SimpleCallSystem {
   // الاستماع لطلبات المكالمات (للمعلم)
   listenForCallRequests(callback: (requests: SimpleCallRequest[]) => void): () => void {
     console.log('🔔 Setting up simple listener for teacher:', this.teacherId);
-    
-    const collectionRef = collection(db, 'simple_call_requests');
-    
-    const unsubscribe = onSnapshot(collectionRef, (snapshot) => {
-      console.log('📞 Received snapshot with', snapshot.size, 'documents');
+
+    // استخدام query مع where للبحث عن الطلبات الخاصة بالمعلم
+    const q = query(
+      collection(db, 'simple_call_requests'),
+      where('teacherId', '==', this.teacherId)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log('📞 Received snapshot with', snapshot.size, 'documents for teacher:', this.teacherId);
       const requests: SimpleCallRequest[] = [];
       const now = new Date();
-      
+
       snapshot.forEach((doc) => {
         const data = doc.data() as SimpleCallRequest;
-        console.log('📋 Processing document:', data);
-        
-        // فقط الطلبات للمعلم الحالي والمعلقة
-        if (data.teacherId === this.teacherId && data.status === 'pending') {
+        console.log('📋 Processing document for teacher:', data.teacherId, 'status:', data.status);
+
+        // فقط الطلبات المعلقة
+        if (data.status === 'pending') {
           // تحقق من انتهاء الصلاحية
           if (data.expiresAt.toDate() > now) {
             requests.push(data);
@@ -105,10 +109,12 @@ export class SimpleCallSystem {
             // حذف الطلب المنتهي الصلاحية
             deleteDoc(doc.ref).catch(console.error);
           }
+        } else {
+          console.log('⏭️ Skipping non-pending request:', data.status);
         }
       });
-      
-      console.log('📤 Calling callback with', requests.length, 'requests');
+
+      console.log('📤 Calling callback with', requests.length, 'requests for teacher:', this.teacherId);
       callback(requests);
     }, (error) => {
       console.error('❌ Error in simple listener:', error);
