@@ -41,9 +41,7 @@ import Loading from '@/app/loading';
 import { useUserData } from '@/hooks/useUser';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
-import IncomingCallNotification from '@/components/IncomingCallNotification';
-import SimpleFreeVideoCall from '@/components/SimpleFreeVideoCall';
-import { createSimpleCallSystem, SimpleCallRequest } from '@/lib/newSimpleCallSystem';
+import DailyCallManager from '@/components/DailyCallManager';
 
 
 const menuItems = [
@@ -88,10 +86,7 @@ function TeacherLayoutContent({
   const pathname = usePathname();
   const router = useRouter();
   const { toggleSidebar } = useSidebar();
-  const [incomingCall, setIncomingCall] = React.useState<SimpleCallRequest | null>(null);
-  const [callManager, setCallManager] = React.useState<any>(null);
-  const [isInCall, setIsInCall] = React.useState(false);
-  const [currentCall, setCurrentCall] = React.useState<{roomId: string, studentName: string} | null>(null);
+  // تم إزالة النظام القديم - سيتم استخدام DailyCallManager
   const [theme, setTheme] = React.useState('light');
   const { isMobile, setOpenMobile } = useSidebar();
   
@@ -101,34 +96,7 @@ function TeacherLayoutContent({
     }
   }, [userData, loading, router]);
 
-  // إعداد مدير إشعارات المكالمات
-  React.useEffect(() => {
-    if (userData && userData.type === 'teacher') {
-      // استخدام uid إذا كان متاح، وإلا استخدام id
-      const teacherId = (userData as any).uid || userData.id;
-      console.log('Setting up call manager for teacher:', teacherId, '(userData.id:', userData.id, ', userData.uid:', (userData as any).uid, ')');
-      const manager = createSimpleCallSystem(teacherId);
-      setCallManager(manager);
-
-      // الاستماع لطلبات المكالمات
-      const unsubscribe = manager.listenForCallRequests((requests) => {
-        console.log('Received call requests:', requests);
-        const pendingRequest = requests.find(req => req.status === 'pending');
-        if (pendingRequest && !incomingCall) {
-          console.log('Setting incoming call:', pendingRequest);
-          setIncomingCall(pendingRequest);
-          // تشغيل صوت المكالمة (اختياري)
-          // playCallSound();
-        } else if (!pendingRequest && incomingCall) {
-          console.log('Clearing incoming call');
-          setIncomingCall(null);
-        }
-      });
-
-      return () => unsubscribe();
-    }
-    return () => {}; // إضافة return فارغ للحالات الأخرى
-  }, [userData]);
+  // تم إزالة النظام القديم - سيتم استخدام DailyCallManager
 
 
   const handleLogout = async () => {
@@ -136,27 +104,7 @@ function TeacherLayoutContent({
     router.push('/auth');
   }
 
-  // دوال التعامل مع المكالمات
-  const handleAcceptCall = (roomId: string) => {
-    if (incomingCall) {
-      console.log('🎉 Teacher accepting call with room:', roomId);
-      setCurrentCall({
-        roomId: incomingCall.roomId, // استخدام roomId من الطلب الأصلي
-        studentName: incomingCall.studentName
-      });
-      setIsInCall(true);
-      setIncomingCall(null);
-    }
-  };
-
-  const handleRejectCall = () => {
-    setIncomingCall(null);
-  };
-
-  const handleEndCall = () => {
-    setIsInCall(false);
-    setCurrentCall(null);
-  };
+  // تم إزالة دوال المكالمات القديمة
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -180,30 +128,8 @@ function TeacherLayoutContent({
     return <Loading />;
   }
 
-  // عرض المكالمة النشطة
-  if (isInCall && currentCall) {
-    return (
-      <SimpleFreeVideoCall
-        roomId={currentCall.roomId}
-        userName={userData.name || 'معلم'}
-        userType="teacher"
-        onCallEnd={handleEndCall}
-        remoteUserName={currentCall.studentName}
-      />
-    );
-  }
-
   return (
     <>
-      {/* إشعار المكالمة الواردة */}
-      {incomingCall && callManager && (
-        <IncomingCallNotification
-          callRequest={incomingCall}
-          onAccept={handleAcceptCall}
-          onReject={handleRejectCall}
-          callManager={callManager}
-        />
-      )}
         <Sidebar side="right" collapsible="icon">
             <SidebarHeader className="p-2 justify-center">
                  <div className="flex items-center gap-2">
@@ -286,6 +212,15 @@ function TeacherLayoutContent({
             <main className="flex-1 overflow-auto p-4 sm:p-6 pb-20 md:pb-6">{children}</main>
             <BottomNavBar items={menuItems} />
         </SidebarInset>
+
+        {/* نظام المكالمات الجديد */}
+        {userData && (
+          <DailyCallManager
+            userId={(userData as any).uid || userData.id}
+            userName={userData.name || 'معلم'}
+            userType="teacher"
+          />
+        )}
     </>
   );
 }
