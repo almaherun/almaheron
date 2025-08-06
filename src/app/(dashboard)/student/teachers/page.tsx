@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useUserData, UserData } from '@/hooks/useUser';
 import { collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp } from 'firebase/firestore';
-import ModernVideoCall from '@/components/ModernVideoCall';
+import JitsiMeetCall from '@/components/JitsiMeetCall';
 import WaitingForApproval from '@/components/WaitingForApproval';
 import { generateRoomId } from '@/lib/firebaseSignaling';
 import { createSimpleCallSystem, SimpleCallSystem } from '@/lib/simpleCallSystem';
@@ -274,7 +274,7 @@ export default function TeachersPage() {
 
     if (isInCall && currentCall) {
         return (
-            <ModernVideoCall
+            <JitsiMeetCall
                 roomId={currentCall.roomId}
                 userName={student?.name || 'طالب'}
                 userType="student"

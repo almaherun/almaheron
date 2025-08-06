@@ -42,7 +42,7 @@ import { useUserData } from '@/hooks/useUser';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import IncomingCallNotification from '@/components/IncomingCallNotification';
-import ModernVideoCall from '@/components/ModernVideoCall';
+import JitsiMeetCall from '@/components/JitsiMeetCall';
 import { createSimpleCallSystem, SimpleCallRequest } from '@/lib/simpleCallSystem';
 
 
@@ -183,7 +183,7 @@ function TeacherLayoutContent({
   // عرض المكالمة النشطة
   if (isInCall && currentCall) {
     return (
-      <ModernVideoCall
+      <JitsiMeetCall
         roomId={currentCall.roomId}
         userName={userData.name || 'معلم'}
         userType="teacher"
