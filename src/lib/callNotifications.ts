@@ -1,5 +1,5 @@
 import { database } from './firebase';
-import { ref, push, set, onValue, remove, serverTimestamp } from 'firebase/database';
+import { ref, push, set, onValue, remove, serverTimestamp, get } from 'firebase/database';
 
 export interface CallRequest {
   id: string;
@@ -28,40 +28,54 @@ export class CallNotificationManager {
     teacherName: string,
     roomId: string
   ): Promise<string> {
-    const callRequestsRef = ref(database, `call_requests/${this.teacherId}`);
-    const newRequestRef = push(callRequestsRef);
-    
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 2); // ينتهي بعد دقيقتين
-
-    const callRequest: Omit<CallRequest, 'id'> = {
-      studentId,
-      studentName,
-      teacherId: this.teacherId,
-      teacherName,
-      roomId,
-      status: 'pending',
-      createdAt: serverTimestamp(),
-      expiresAt: expiresAt.getTime()
-    };
-
-    await set(newRequestRef, {
-      ...callRequest,
-      id: newRequestRef.key
-    });
-
-    // حذف الطلب تلقائياً بعد دقيقتين
-    setTimeout(async () => {
-      const snapshot = await import('firebase/database').then(({ get }) => get(newRequestRef));
-      if (snapshot.exists() && snapshot.val().status === 'pending') {
-        await set(newRequestRef, {
-          ...snapshot.val(),
-          status: 'cancelled'
-        });
+    try {
+      // التحقق من وجود database
+      if (!database) {
+        throw new Error('Firebase Realtime Database is not initialized');
       }
-    }, 120000); // 2 دقيقة
 
-    return newRequestRef.key!;
+      const callRequestsRef = ref(database, `call_requests/${this.teacherId}`);
+      const newRequestRef = push(callRequestsRef);
+
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 2); // ينتهي بعد دقيقتين
+
+      const callRequest: Omit<CallRequest, 'id'> = {
+        studentId,
+        studentName,
+        teacherId: this.teacherId,
+        teacherName,
+        roomId,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        expiresAt: expiresAt.getTime()
+      };
+
+      await set(newRequestRef, {
+        ...callRequest,
+        id: newRequestRef.key
+      });
+
+      // حذف الطلب تلقائياً بعد دقيقتين
+      setTimeout(async () => {
+        try {
+          const snapshot = await get(newRequestRef);
+          if (snapshot.exists() && snapshot.val().status === 'pending') {
+            await set(newRequestRef, {
+              ...snapshot.val(),
+              status: 'cancelled'
+            });
+          }
+        } catch (error) {
+          console.error('Error in timeout cleanup:', error);
+        }
+      }, 120000); // 2 دقيقة
+
+      return newRequestRef.key!;
+    } catch (error) {
+      console.error('Error sending call request:', error);
+      throw error;
+    }
   }
 
   // الاستماع لطلبات المكالمات (للمعلم)

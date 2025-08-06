@@ -4,13 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Phone, PhoneOff, User, Clock } from 'lucide-react';
-import { CallNotificationManager } from '@/lib/callNotifications';
+import { FirestoreCallNotificationManager } from '@/lib/callNotificationsFirestore';
 
 interface WaitingForApprovalProps {
   teacherName: string;
   teacherAvatar?: string;
   requestId: string;
-  callManager: CallNotificationManager;
+  callManager: FirestoreCallNotificationManager;
   onCancel: () => void;
   onAccepted: () => void;
   onRejected: () => void;

@@ -4,13 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Phone, PhoneOff, User } from 'lucide-react';
-import { CallRequest, CallNotificationManager } from '@/lib/callNotifications';
+import { CallRequest, FirestoreCallNotificationManager } from '@/lib/callNotificationsFirestore';
 
 interface IncomingCallNotificationProps {
   callRequest: CallRequest;
   onAccept: (roomId: string) => void;
   onReject: () => void;
-  callManager: CallNotificationManager;
+  callManager: FirestoreCallNotificationManager;
 }
 
 export default function IncomingCallNotification({
@@ -26,9 +26,19 @@ export default function IncomingCallNotification({
     // حساب الوقت المتبقي
     const updateTimeLeft = () => {
       const now = Date.now();
-      const remaining = Math.max(0, Math.floor((callRequest.expiresAt - now) / 1000));
+      let expiresAtTime: number;
+
+      if (callRequest.expiresAt && typeof callRequest.expiresAt === 'object' && 'toDate' in callRequest.expiresAt) {
+        // Firestore Timestamp
+        expiresAtTime = (callRequest.expiresAt as any).toDate().getTime();
+      } else {
+        // Regular number timestamp
+        expiresAtTime = callRequest.expiresAt as any;
+      }
+
+      const remaining = Math.max(0, Math.floor((expiresAtTime - now) / 1000));
       setTimeLeft(remaining);
-      
+
       if (remaining === 0) {
         handleReject(); // رفض تلقائي عند انتهاء الوقت
       }

@@ -43,7 +43,7 @@ import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import IncomingCallNotification from '@/components/IncomingCallNotification';
 import VideoCall from '@/components/VideoCall';
-import { createCallNotificationManager, CallRequest } from '@/lib/callNotifications';
+import { createFirestoreCallNotificationManager, CallRequest } from '@/lib/callNotificationsFirestore';
 
 
 const menuItems = [
@@ -104,7 +104,7 @@ function TeacherLayoutContent({
   // إعداد مدير إشعارات المكالمات
   React.useEffect(() => {
     if (userData && userData.type === 'teacher') {
-      const manager = createCallNotificationManager(userData.id);
+      const manager = createFirestoreCallNotificationManager(userData.id);
       setCallManager(manager);
 
       // الاستماع لطلبات المكالمات
