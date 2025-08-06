@@ -67,13 +67,40 @@ export default function ModernVideoCall({
     // Hide mobile navigation and set fullscreen
     document.body.classList.add('video-call-active');
     document.documentElement.style.overflow = 'hidden';
-    
-    // Hide bottom navigation bar
-    const bottomNavBar = document.querySelector('.md\\:hidden.fixed.bottom-0');
-    if (bottomNavBar) {
-      (bottomNavBar as HTMLElement).style.display = 'none';
+
+    // إخفاء جميع أشرطة التنقل المحتملة
+    const hideNavigationBars = () => {
+      // البحث عن جميع أشرطة التنقل المحتملة
+      const selectors = [
+        '.md\\:hidden.fixed.bottom-0',
+        '[class*="bottom-0"]',
+        '[class*="fixed"][class*="bottom"]',
+        'nav[class*="bottom"]',
+        '.bottom-navigation',
+        '.mobile-nav',
+        '.tab-bar'
+      ];
+
+      selectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(element => {
+          const htmlElement = element as HTMLElement;
+          htmlElement.style.display = 'none';
+          htmlElement.style.visibility = 'hidden';
+          htmlElement.style.opacity = '0';
+          htmlElement.style.transform = 'translateY(100%)';
+        });
+      });
+    };
+
+    hideNavigationBars();
+
+    // إخفاء شريط العنوان في المتصفحات المحمولة
+    const metaViewport = document.querySelector('meta[name=viewport]');
+    if (metaViewport) {
+      metaViewport.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no');
     }
-    
+
     // Auto-hide controls after 3 seconds
     const hideControlsTimer = () => {
       if (controlsTimeoutRef.current) {
@@ -85,17 +112,41 @@ export default function ModernVideoCall({
     };
 
     hideControlsTimer();
-    
+
     return () => {
       cleanup();
       // Restore UI
       document.body.classList.remove('video-call-active');
       document.documentElement.style.overflow = 'auto';
-      
-      if (bottomNavBar) {
-        (bottomNavBar as HTMLElement).style.display = 'flex';
+
+      // إظهار أشرطة التنقل مرة أخرى
+      const selectors = [
+        '.md\\:hidden.fixed.bottom-0',
+        '[class*="bottom-0"]',
+        '[class*="fixed"][class*="bottom"]',
+        'nav[class*="bottom"]',
+        '.bottom-navigation',
+        '.mobile-nav',
+        '.tab-bar'
+      ];
+
+      selectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(element => {
+          const htmlElement = element as HTMLElement;
+          htmlElement.style.display = '';
+          htmlElement.style.visibility = '';
+          htmlElement.style.opacity = '';
+          htmlElement.style.transform = '';
+        });
+      });
+
+      // استعادة viewport
+      const metaViewport = document.querySelector('meta[name=viewport]');
+      if (metaViewport) {
+        metaViewport.setAttribute('content', 'width=device-width, initial-scale=1');
       }
-      
+
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
       }
@@ -328,9 +379,20 @@ export default function ModernVideoCall({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black z-50 flex flex-col"
       onClick={handleScreenClick}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        height: '100vh',
+        width: '100vw',
+        overflow: 'hidden'
+      }}
     >
       {/* Permission Request Overlay */}
       {connectionStatus === 'requesting-permission' && (

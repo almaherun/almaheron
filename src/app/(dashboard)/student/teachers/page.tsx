@@ -19,7 +19,7 @@ import { collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, array
 import ModernVideoCall from '@/components/ModernVideoCall';
 import WaitingForApproval from '@/components/WaitingForApproval';
 import { generateRoomId } from '@/lib/firebaseSignaling';
-import { createFirestoreCallNotificationManager, FirestoreCallNotificationManager } from '@/lib/callNotificationsFirestore';
+import { createSimpleCallSystem, SimpleCallSystem } from '@/lib/simpleCallSystem';
 
 
 const TeacherList = ({ teachers, isLoading, onStartCall, canCall }: { teachers: User[], isLoading: boolean, onStartCall: (teacher: User) => void, canCall: boolean }) => {
@@ -92,7 +92,7 @@ export default function TeachersPage() {
         teacherName: string;
         teacherAvatar?: string;
         requestId: string;
-        callManager: FirestoreCallNotificationManager;
+        callManager: SimpleCallSystem;
     } | null>(null);
     const { toast } = useToast();
 
@@ -139,7 +139,7 @@ export default function TeachersPage() {
 
         try {
             const roomId = generateRoomId();
-            const callManager = createFirestoreCallNotificationManager(teacher.uid);
+            const callManager = createSimpleCallSystem(teacher.uid);
 
             // إرسال طلب المكالمة للمعلم
             console.log('Sending call request to teacher:', teacher.uid, 'from student:', student.id);

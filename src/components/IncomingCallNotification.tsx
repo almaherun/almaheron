@@ -4,13 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Phone, PhoneOff, User } from 'lucide-react';
-import { CallRequest, FirestoreCallNotificationManager } from '@/lib/callNotificationsFirestore';
+import { SimpleCallRequest, SimpleCallSystem } from '@/lib/simpleCallSystem';
 
 interface IncomingCallNotificationProps {
-  callRequest: CallRequest;
+  callRequest: SimpleCallRequest;
   onAccept: (roomId: string) => void;
   onReject: () => void;
-  callManager: FirestoreCallNotificationManager;
+  callManager: SimpleCallSystem;
 }
 
 export default function IncomingCallNotification({

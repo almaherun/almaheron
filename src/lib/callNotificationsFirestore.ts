@@ -90,28 +90,37 @@ export class FirestoreCallNotificationManager {
 
   // الاستماع لطلبات المكالمات (للمعلم)
   listenForCallRequests(callback: (requests: CallRequest[]) => void): () => void {
+    console.log('🔔 Setting up listener for teacher:', this.teacherId);
+
+    // استخدام استعلام أبسط بدون orderBy لتجنب مشاكل الفهرسة
     const q = query(
       collection(db, 'call_requests'),
       where('teacherId', '==', this.teacherId),
-      where('status', '==', 'pending'),
-      orderBy('createdAt', 'desc')
+      where('status', '==', 'pending')
     );
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log('📞 Received snapshot with', snapshot.size, 'documents');
       const requests: CallRequest[] = [];
       const now = new Date();
-      
+
       snapshot.forEach((doc) => {
         const data = doc.data() as CallRequest;
+        console.log('📋 Processing call request:', data);
+
         // تجاهل الطلبات المنتهية الصلاحية
         if (data.expiresAt.toDate() > now) {
           requests.push(data);
+          console.log('✅ Added valid request:', data.id);
+        } else {
+          console.log('⏰ Expired request:', data.id);
         }
       });
-      
+
+      console.log('📤 Calling callback with', requests.length, 'requests');
       callback(requests);
     }, (error) => {
-      console.error('Error listening for call requests:', error);
+      console.error('❌ Error listening for call requests:', error);
       callback([]);
     });
 

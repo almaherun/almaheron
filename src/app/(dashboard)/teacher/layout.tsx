@@ -43,7 +43,7 @@ import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import IncomingCallNotification from '@/components/IncomingCallNotification';
 import ModernVideoCall from '@/components/ModernVideoCall';
-import { createFirestoreCallNotificationManager, CallRequest } from '@/lib/callNotificationsFirestore';
+import { createSimpleCallSystem, SimpleCallRequest } from '@/lib/simpleCallSystem';
 
 
 const menuItems = [
@@ -88,7 +88,7 @@ function TeacherLayoutContent({
   const pathname = usePathname();
   const router = useRouter();
   const { toggleSidebar } = useSidebar();
-  const [incomingCall, setIncomingCall] = React.useState<CallRequest | null>(null);
+  const [incomingCall, setIncomingCall] = React.useState<SimpleCallRequest | null>(null);
   const [callManager, setCallManager] = React.useState<any>(null);
   const [isInCall, setIsInCall] = React.useState(false);
   const [currentCall, setCurrentCall] = React.useState<{roomId: string, studentName: string} | null>(null);
@@ -106,7 +106,7 @@ function TeacherLayoutContent({
     if (userData && userData.type === 'teacher') {
       console.log('Setting up call manager for teacher:', userData.id);
       const teacherId = userData.id;
-      const manager = createFirestoreCallNotificationManager(teacherId);
+      const manager = createSimpleCallSystem(teacherId);
       setCallManager(manager);
 
       // الاستماع لطلبات المكالمات
