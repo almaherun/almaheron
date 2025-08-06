@@ -16,10 +16,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useUserData, UserData } from '@/hooks/useUser';
 import { collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp } from 'firebase/firestore';
-import JitsiMeetCall from '@/components/JitsiMeetCall';
+import SimpleFreeVideoCall from '@/components/SimpleFreeVideoCall';
 import WaitingForApproval from '@/components/WaitingForApproval';
-import { generateRoomId } from '@/lib/firebaseSignaling';
-import { createSimpleCallSystem, SimpleCallSystem } from '@/lib/simpleCallSystem';
+// إنشاء رقم غرفة بسيط
+function generateRoomId(): string {
+  return `room_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+}
+import { createSimpleCallSystem, SimpleCallSystem } from '@/lib/newSimpleCallSystem';
 
 
 const TeacherList = ({ teachers, isLoading, onStartCall, canCall }: { teachers: User[], isLoading: boolean, onStartCall: (teacher: User) => void, canCall: boolean }) => {
@@ -274,7 +277,7 @@ export default function TeachersPage() {
 
     if (isInCall && currentCall) {
         return (
-            <JitsiMeetCall
+            <SimpleFreeVideoCall
                 roomId={currentCall.roomId}
                 userName={student?.name || 'طالب'}
                 userType="student"

@@ -80,6 +80,29 @@ export default function JitsiMeetCall({
         displayName: userName,
         email: `${userType}@almaheron.app`
       },
+      // تحسينات للجودة والأداء
+      configOverwrite: {
+        startWithAudioMuted: false,
+        startWithVideoMuted: false,
+        enableWelcomePage: false,
+        enableClosePage: false,
+        defaultLanguage: 'ar',
+        // تحسين جودة الفيديو
+        resolution: 720,
+        constraints: {
+          video: {
+            height: { ideal: 720, max: 1080, min: 240 },
+            width: { ideal: 1280, max: 1920, min: 320 }
+          }
+        },
+        // تحسين الصوت
+        enableNoAudioDetection: true,
+        enableNoisyMicDetection: true,
+        // توفير البيانات
+        enableLayerSuspension: true,
+        // أمان إضافي
+        requireDisplayName: true
+      },
       configOverwrite: {
         // إعدادات المكالمات الثنائية (معلم + طالب فقط)
         startWithAudioMuted: false,
