@@ -41,6 +41,9 @@ import Loading from '@/app/loading';
 import { useUserData } from '@/hooks/useUser';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
+import IncomingCallNotification from '@/components/IncomingCallNotification';
+import VideoCall from '@/components/VideoCall';
+import { createCallNotificationManager, CallRequest } from '@/lib/callNotifications';
 
 
 const menuItems = [
@@ -82,10 +85,15 @@ function TeacherLayoutContent({
   children: React.ReactNode;
 }) {
   const { userData, loading } = useUserData();
-  const router = useRouter();
   const pathname = usePathname();
+  const router = useRouter();
+  const { toggleSidebar } = useSidebar();
+  const [incomingCall, setIncomingCall] = React.useState<CallRequest | null>(null);
+  const [callManager, setCallManager] = React.useState<any>(null);
+  const [isInCall, setIsInCall] = React.useState(false);
+  const [currentCall, setCurrentCall] = React.useState<{roomId: string, studentName: string} | null>(null);
   const [theme, setTheme] = React.useState('light');
-  const { isMobile, setOpenMobile, toggleSidebar } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   
   React.useEffect(() => {
     if (!loading && (!userData || userData.type !== 'teacher')) {
@@ -93,11 +101,55 @@ function TeacherLayoutContent({
     }
   }, [userData, loading, router]);
 
+  // إعداد مدير إشعارات المكالمات
+  React.useEffect(() => {
+    if (userData && userData.type === 'teacher') {
+      const manager = createCallNotificationManager(userData.id);
+      setCallManager(manager);
+
+      // الاستماع لطلبات المكالمات
+      const unsubscribe = manager.listenForCallRequests((requests) => {
+        const pendingRequest = requests.find(req => req.status === 'pending');
+        if (pendingRequest && !incomingCall) {
+          setIncomingCall(pendingRequest);
+          // تشغيل صوت المكالمة (اختياري)
+          // playCallSound();
+        } else if (!pendingRequest && incomingCall) {
+          setIncomingCall(null);
+        }
+      });
+
+      return () => unsubscribe();
+    }
+    return () => {}; // إضافة return فارغ للحالات الأخرى
+  }, [userData, incomingCall]);
+
 
   const handleLogout = async () => {
     await signOut(auth);
     router.push('/auth');
   }
+
+  // دوال التعامل مع المكالمات
+  const handleAcceptCall = (roomId: string) => {
+    if (incomingCall) {
+      setCurrentCall({
+        roomId: roomId,
+        studentName: incomingCall.studentName
+      });
+      setIsInCall(true);
+      setIncomingCall(null);
+    }
+  };
+
+  const handleRejectCall = () => {
+    setIncomingCall(null);
+  };
+
+  const handleEndCall = () => {
+    setIsInCall(false);
+    setCurrentCall(null);
+  };
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -121,8 +173,31 @@ function TeacherLayoutContent({
     return <Loading />;
   }
 
+  // عرض المكالمة النشطة
+  if (isInCall && currentCall) {
+    return (
+      <div className="fixed inset-0 z-50">
+        <VideoCall
+          roomId={currentCall.roomId}
+          userName={userData.name || 'معلم'}
+          userType="teacher"
+          onCallEnd={handleEndCall}
+        />
+      </div>
+    );
+  }
+
   return (
     <>
+      {/* إشعار المكالمة الواردة */}
+      {incomingCall && callManager && (
+        <IncomingCallNotification
+          callRequest={incomingCall}
+          onAccept={handleAcceptCall}
+          onReject={handleRejectCall}
+          callManager={callManager}
+        />
+      )}
         <Sidebar side="right" collapsible="icon">
             <SidebarHeader className="p-2 justify-center">
                  <div className="flex items-center gap-2">

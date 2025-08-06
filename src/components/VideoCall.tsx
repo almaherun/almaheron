@@ -53,11 +53,22 @@ export default function VideoCall({ roomId, userName, userType, onCallEnd }: Vid
     document.body.classList.add('video-call-active');
     document.documentElement.style.overflow = 'hidden';
 
+    // إخفاء الشريط السفلي للهاتف
+    const bottomNavBar = document.querySelector('.md\\:hidden.fixed.bottom-0');
+    if (bottomNavBar) {
+      (bottomNavBar as HTMLElement).style.display = 'none';
+    }
+
     return () => {
       cleanup();
       // Restore scrolling
       document.body.classList.remove('video-call-active');
       document.documentElement.style.overflow = 'auto';
+
+      // إظهار الشريط السفلي مرة أخرى
+      if (bottomNavBar) {
+        (bottomNavBar as HTMLElement).style.display = 'flex';
+      }
     };
   }, []);
 

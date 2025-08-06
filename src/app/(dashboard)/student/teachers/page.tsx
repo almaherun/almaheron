@@ -17,7 +17,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserData, UserData } from '@/hooks/useUser';
 import { collection, query, where, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp } from 'firebase/firestore';
 import VideoCall from '@/components/VideoCall';
+import WaitingForApproval from '@/components/WaitingForApproval';
 import { generateRoomId } from '@/lib/firebaseSignaling';
+import { createCallNotificationManager, CallNotificationManager } from '@/lib/callNotifications';
 
 
 const TeacherList = ({ teachers, isLoading, onStartCall, canCall }: { teachers: User[], isLoading: boolean, onStartCall: (teacher: User) => void, canCall: boolean }) => {
@@ -86,6 +88,12 @@ export default function TeachersPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isInCall, setIsInCall] = useState(false);
     const [currentCall, setCurrentCall] = useState<{roomId: string, teacherName: string} | null>(null);
+    const [waitingForApproval, setWaitingForApproval] = useState<{
+        teacherName: string;
+        teacherAvatar?: string;
+        requestId: string;
+        callManager: CallNotificationManager;
+    } | null>(null);
     const { toast } = useToast();
 
     // Check if student can make calls (subscription not expired)
@@ -131,35 +139,35 @@ export default function TeachersPage() {
 
         try {
             const roomId = generateRoomId();
+            const callManager = createCallNotificationManager(teacher.uid);
 
-            // Create call session in database
-            await addDoc(collection(db, 'call_sessions'), {
-                teacherId: teacher.uid,
+            // إرسال طلب المكالمة للمعلم
+            const requestId = await callManager.sendCallRequest(
+                student.id,
+                student.name,
+                teacher.name,
+                roomId
+            );
+
+            // عرض شاشة انتظار الموافقة
+            setWaitingForApproval({
                 teacherName: teacher.name,
-                studentId: student.id,
-                studentName: student.name,
-                roomId: roomId,
-                status: 'active',
-                startTime: serverTimestamp(),
-                createdAt: serverTimestamp()
+                teacherAvatar: (teacher as any).avatarUrl,
+                requestId,
+                callManager
             });
-
-            setCurrentCall({
-                roomId: roomId,
-                teacherName: teacher.name
-            });
-            setIsInCall(true);
 
             toast({
-                title: "بدء المكالمة",
-                description: `جاري الاتصال بـ ${teacher.name}...`,
+                title: "تم إرسال طلب المكالمة",
+                description: `في انتظار موافقة ${teacher.name}`,
                 className: "bg-blue-600 text-white"
             });
+
         } catch (error) {
             console.error('Error starting call:', error);
             toast({
-                title: "خطأ",
-                description: "لم نتمكن من بدء المكالمة",
+                title: "خطأ في إرسال الطلب",
+                description: "حدث خطأ أثناء محاولة إرسال طلب المكالمة",
                 variant: "destructive"
             });
         }
@@ -176,6 +184,57 @@ export default function TeachersPage() {
         });
     };
 
+    // دوال التعامل مع انتظار الموافقة
+    const handleCallApproved = async () => {
+        if (!waitingForApproval || !student) return;
+
+        try {
+            const roomId = generateRoomId();
+            setCurrentCall({
+                roomId: roomId,
+                teacherName: waitingForApproval.teacherName
+            });
+            setIsInCall(true);
+            setWaitingForApproval(null);
+
+            toast({
+                title: "تم قبول المكالمة!",
+                description: "جاري بدء المكالمة...",
+                className: "bg-green-600 text-white"
+            });
+        } catch (error) {
+            console.error('Error starting approved call:', error);
+            setWaitingForApproval(null);
+        }
+    };
+
+    const handleCallRejected = () => {
+        setWaitingForApproval(null);
+        toast({
+            title: "تم رفض المكالمة",
+            description: "المعلم غير متاح حالياً",
+            variant: "destructive"
+        });
+    };
+
+    const handleCallCancelled = () => {
+        setWaitingForApproval(null);
+        toast({
+            title: "تم إلغاء المكالمة",
+            description: "انتهت مهلة انتظار الموافقة",
+            className: "bg-yellow-600 text-white"
+        });
+    };
+
+    const handleCancelWaiting = () => {
+        setWaitingForApproval(null);
+        toast({
+            title: "تم إلغاء الطلب",
+            description: "تم إلغاء طلب المكالمة",
+            className: "bg-gray-600 text-white"
+        });
+    };
+
     const filteredTeachers = teacherList.filter(teacher => {
         const matchesSearch = teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                               (teacher.specialty || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -183,6 +242,22 @@ export default function TeachersPage() {
     });
 
     // Show video call interface - Full screen, no navigation
+    // عرض شاشة انتظار الموافقة
+    if (waitingForApproval) {
+        return (
+            <WaitingForApproval
+                teacherName={waitingForApproval.teacherName}
+                teacherAvatar={waitingForApproval.teacherAvatar}
+                requestId={waitingForApproval.requestId}
+                callManager={waitingForApproval.callManager}
+                onCancel={handleCancelWaiting}
+                onAccepted={handleCallApproved}
+                onRejected={handleCallRejected}
+                onTimeout={handleCallCancelled}
+            />
+        );
+    }
+
     if (isInCall && currentCall) {
         return (
             <div className="fixed inset-0 z-50">
