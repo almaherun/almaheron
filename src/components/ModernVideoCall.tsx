@@ -185,67 +185,83 @@ export default function ModernVideoCall({
 
   const initializeCall = async () => {
     try {
+      console.log('🎥 Initializing call for', userType, 'in room:', roomId);
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true
       });
-      
+
+      console.log('📹 Got media stream:', stream);
+
       setPermissionGranted(true);
       localStreamRef.current = stream;
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
+        console.log('📺 Set local video stream');
       }
-      
+
       // Initialize Firebase signaling
-      signalingRef.current = createSignaling(roomId, `user_${Date.now()}`, userName, userType);
-      
+      const userId = `${userType}_${Date.now()}`;
+      signalingRef.current = createSignaling(roomId, userId, userName, userType);
+
+      console.log('🔗 Created signaling for user:', userId);
+
       // Set up event listeners
       signalingRef.current.on('user-joined', (user) => {
-        console.log('User joined:', user);
-        if (userType === 'teacher' || !remoteUserIdRef.current) {
+        console.log('👤 User joined:', user);
+        // المعلم يبدأ الاتصال دائماً
+        if (userType === 'teacher') {
+          console.log('👨‍🏫 Teacher initiating call to student');
           createPeer(user.id, stream);
         }
       });
-      
+
       signalingRef.current.on('offer', (data) => {
-        console.log('Received offer from:', data.sender);
+        console.log('📞 Received offer from:', data.sender);
         handleOffer(data.offer, data.sender, stream);
       });
-      
+
       signalingRef.current.on('answer', (data) => {
-        console.log('Received answer from:', data.sender);
+        console.log('✅ Received answer from:', data.sender);
         if (peerRef.current) {
           peerRef.current.signal(data.answer);
         }
       });
-      
+
       signalingRef.current.on('ice-candidate', (data) => {
-        console.log('Received ICE candidate from:', data.sender);
+        console.log('🧊 Received ICE candidate from:', data.sender);
         if (peerRef.current) {
           peerRef.current.signal(data.candidate);
         }
       });
-      
+
       // Join the room
       await signalingRef.current.joinRoom();
-      
+      console.log('🏠 Joined room:', roomId);
+
       // Check for existing users
       const existingUsers = await signalingRef.current.getRoomUsers();
+      console.log('👥 Existing users in room:', existingUsers);
+
       if (existingUsers.length > 0) {
         const remoteUser = existingUsers[0];
         remoteUserIdRef.current = remoteUser.id;
-        
+
+        // الطالب ينتظر المعلم ليبدأ الاتصال
         if (userType === 'student') {
-          createPeer(remoteUser.id, stream);
+          console.log('👨‍🎓 Student waiting for teacher to initiate');
         }
       }
-      
+
       setConnectionStatus('connected');
       setIsConnected(true);
       callStartTimeRef.current = new Date();
-      
+
+      console.log('✅ Call initialization complete');
+
     } catch (error) {
-      console.error('Error accessing media devices:', error);
+      console.error('❌ Error accessing media devices:', error);
       toast({
         title: "خطأ في الوصول للكاميرا",
         description: "تأكد من السماح بالوصول للكاميرا والمايكروفون",
@@ -256,20 +272,30 @@ export default function ModernVideoCall({
   };
 
   const createPeer = (remoteUserId: string, stream: MediaStream) => {
+    console.log('🔗 Creating peer connection to:', remoteUserId);
+
     const peer = new SimplePeer({
       initiator: true,
       trickle: false,
-      stream: stream
+      stream: stream,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+      }
     });
 
     peer.on('signal', (signal) => {
+      console.log('📡 Sending offer to:', remoteUserId);
       signalingRef.current?.sendOffer(signal, remoteUserId);
     });
 
     peer.on('stream', (remoteStream) => {
-      console.log('Received remote stream');
+      console.log('🎥 Received remote stream from:', remoteUserId);
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remoteStream;
+        console.log('📺 Set remote video stream');
       }
       toast({
         title: "تم الاتصال بنجاح!",
@@ -278,8 +304,17 @@ export default function ModernVideoCall({
       });
     });
 
+    peer.on('connect', () => {
+      console.log('🔗 Peer connected successfully');
+    });
+
     peer.on('error', (error) => {
-      console.error('Peer error:', error);
+      console.error('❌ Peer error:', error);
+      toast({
+        title: "خطأ في الاتصال",
+        description: "حدث خطأ في الاتصال مع المستخدم الآخر",
+        variant: "destructive"
+      });
     });
 
     peerRef.current = peer;
@@ -287,20 +322,30 @@ export default function ModernVideoCall({
   };
 
   const handleOffer = (offer: any, senderId: string, stream: MediaStream) => {
+    console.log('📞 Handling offer from:', senderId);
+
     const peer = new SimplePeer({
       initiator: false,
       trickle: false,
-      stream: stream
+      stream: stream,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+      }
     });
 
     peer.on('signal', (signal) => {
+      console.log('📡 Sending answer to:', senderId);
       signalingRef.current?.sendAnswer(signal, senderId);
     });
 
     peer.on('stream', (remoteStream) => {
-      console.log('Received remote stream');
+      console.log('🎥 Received remote stream from:', senderId);
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remoteStream;
+        console.log('📺 Set remote video stream');
       }
       toast({
         title: "تم الاتصال بنجاح!",
@@ -309,10 +354,20 @@ export default function ModernVideoCall({
       });
     });
 
-    peer.on('error', (error) => {
-      console.error('Peer error:', error);
+    peer.on('connect', () => {
+      console.log('🔗 Peer connected successfully');
     });
 
+    peer.on('error', (error) => {
+      console.error('❌ Peer error:', error);
+      toast({
+        title: "خطأ في الاتصال",
+        description: "حدث خطأ في الاتصال مع المستخدم الآخر",
+        variant: "destructive"
+      });
+    });
+
+    console.log('📡 Signaling offer to peer');
     peer.signal(offer);
     peerRef.current = peer;
     remoteUserIdRef.current = senderId;
@@ -436,7 +491,7 @@ export default function ModernVideoCall({
       {connectionStatus === 'connected' && (
         <>
           {/* Remote Video (Full Screen) */}
-          <div className="flex-1 relative">
+          <div className="flex-1 relative bg-gray-900">
             <video
               ref={remoteVideoRef}
               autoPlay
@@ -444,6 +499,22 @@ export default function ModernVideoCall({
               muted={false}
               className="w-full h-full object-cover"
             />
+
+            {/* Placeholder when no remote video */}
+            {!remoteVideoRef.current?.srcObject && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                <div className="text-center">
+                  <Avatar className="h-32 w-32 mx-auto mb-4 border-4 border-white/20">
+                    <AvatarImage src={remoteUserAvatar} alt={remoteUserName} />
+                    <AvatarFallback className="text-4xl bg-gray-700 text-white">
+                      <User className="h-16 w-16" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <h3 className="text-2xl font-bold text-white mb-2">{remoteUserName}</h3>
+                  <p className="text-gray-400">في انتظار الاتصال...</p>
+                </div>
+              </div>
+            )}
             
             {/* Local Video (Picture in Picture) */}
             <div className="absolute top-4 right-4 w-32 h-24 md:w-40 md:h-32 bg-gray-800 rounded-lg overflow-hidden shadow-lg border-2 border-white/20">

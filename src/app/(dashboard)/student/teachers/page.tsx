@@ -92,6 +92,7 @@ export default function TeachersPage() {
         teacherName: string;
         teacherAvatar?: string;
         requestId: string;
+        roomId: string;
         callManager: SimpleCallSystem;
     } | null>(null);
     const { toast } = useToast();
@@ -156,6 +157,7 @@ export default function TeachersPage() {
                 teacherName: teacher.name,
                 teacherAvatar: (teacher as any).avatarUrl,
                 requestId,
+                roomId,
                 callManager
             });
 
@@ -191,7 +193,11 @@ export default function TeachersPage() {
         if (!waitingForApproval || !student) return;
 
         try {
-            const roomId = generateRoomId();
+            // استخدام نفس roomId الذي تم إرساله في الطلب الأصلي
+            const roomId = waitingForApproval.roomId;
+
+            console.log('🎉 Call approved! Starting call with room:', roomId);
+
             setCurrentCall({
                 roomId: roomId,
                 teacherName: waitingForApproval.teacherName

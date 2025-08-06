@@ -138,8 +138,9 @@ function TeacherLayoutContent({
   // دوال التعامل مع المكالمات
   const handleAcceptCall = (roomId: string) => {
     if (incomingCall) {
+      console.log('🎉 Teacher accepting call with room:', roomId);
       setCurrentCall({
-        roomId: roomId,
+        roomId: incomingCall.roomId, // استخدام roomId من الطلب الأصلي
         studentName: incomingCall.studentName
       });
       setIsInCall(true);
