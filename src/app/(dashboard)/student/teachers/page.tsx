@@ -94,9 +94,20 @@ export default function TeachersPage() {
                 const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
                 const isOnline = lastSeen && lastSeen > fiveMinutesAgo;
 
+                // استخدام نفس المعرف الذي يستخدمه المعلم (Firebase Auth UID)
+                // إذا كان authUid متوفر، استخدمه، وإلا استخدم doc.id
+                const teacherId = data.authUid || doc.id;
+
+                console.log('👨‍🏫 Teacher data:', {
+                    docId: doc.id,
+                    authUid: data.authUid,
+                    finalTeacherId: teacherId,
+                    name: data.name
+                });
+
                 teachers.push({
-                    uid: doc.id,
-                    id: doc.id,
+                    uid: teacherId,
+                    id: teacherId,
                     ...data,
                     isOnline: isOnline || false, // افتراض أن المعلم متصل إذا كان نشطاً خلال 5 دقائق
                     lastSeen: lastSeen
@@ -134,7 +145,12 @@ export default function TeachersPage() {
                 teacherId: teacher.uid,
                 teacherName: teacher.name,
                 studentId: student?.id,
-                studentName: student?.name
+                studentName: student?.name,
+                teacherData: {
+                    uid: teacher.uid,
+                    id: teacher.id,
+                    authUid: (teacher as any).authUid
+                }
             });
 
             // تعيين حالة الانتظار لهذا المعلم فقط

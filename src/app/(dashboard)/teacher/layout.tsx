@@ -106,9 +106,10 @@ function TeacherLayoutContent({
         const userRef = doc(db, 'users', userData.id);
         await updateDoc(userRef, {
           lastSeen: new Date(),
-          isOnline: true
+          isOnline: true,
+          authUid: userData.id // حفظ authUid للتطابق مع نظام المكالمات
         });
-        console.log('🟢 Teacher online status updated');
+        console.log('🟢 Teacher online status updated with authUid:', userData.id);
       } catch (error) {
         console.error('Error updating online status:', error);
       }
@@ -262,10 +263,15 @@ function TeacherLayoutContent({
 
         {/* نظام المكالمات الجديد - تم إعادة التفعيل */}
         {userData && (() => {
-          const teacherId = (userData as any)?.uid || userData?.id || '';
+          // استخدام Firebase Auth UID مباشرة للتطابق مع الطالب
+          const currentUser = auth.currentUser;
+          const teacherId = currentUser?.uid || userData?.id || '';
+
           console.log('🎓 Teacher call system setup:', {
             teacherId,
             teacherName: userData?.name,
+            authUid: currentUser?.uid,
+            userDataId: userData?.id,
             userData: userData
           });
 
