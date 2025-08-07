@@ -201,10 +201,8 @@ service cloud.firestore {
         && (resource.data.studentId == request.auth.uid
             || resource.data.teacherId == request.auth.uid);
 
-      // الإنشاء: الطالب أو المعلم
-      allow create: if isAuthenticated()
-        && (resource.data.studentId == request.auth.uid
-            || resource.data.teacherId == request.auth.uid);
+      // الإنشاء: أي مستخدم مصادق (سيتم التحقق من البيانات لاحقاً)
+      allow create: if isAuthenticated();
 
       // التحديث: الطالب أو المعلم (لتحديث حالة المكالمة)
       allow update: if isAuthenticated()

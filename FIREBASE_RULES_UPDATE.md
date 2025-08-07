@@ -4,33 +4,35 @@
 - المكالمات لا تصل للمعلم
 - السبب: قواعد Firebase لا تسمح بالوصول لـ `agora_call_requests`
 
-## ✅ **تم إضافة القواعد الجديدة:**
+## ✅ **تم إضافة القواعد الجديدة (محدثة):**
 
 ```javascript
 // قواعد طلبات المكالمات Agora.io
 match /agora_call_requests/{requestId} {
   // القراءة: الطالب أو المعلم المشارك في المكالمة
-  allow read: if isAuthenticated() 
-    && (resource.data.studentId == request.auth.uid 
+  allow read: if isAuthenticated()
+    && (resource.data.studentId == request.auth.uid
         || resource.data.teacherId == request.auth.uid);
-  
-  // الإنشاء: الطالب أو المعلم
-  allow create: if isAuthenticated() 
-    && (resource.data.studentId == request.auth.uid 
-        || resource.data.teacherId == request.auth.uid);
-  
+
+  // الإنشاء: أي مستخدم مصادق (تم تبسيط القاعدة)
+  allow create: if isAuthenticated();
+
   // التحديث: الطالب أو المعلم (لتحديث حالة المكالمة)
-  allow update: if isAuthenticated() 
-    && (resource.data.studentId == request.auth.uid 
+  allow update: if isAuthenticated()
+    && (resource.data.studentId == request.auth.uid
         || resource.data.teacherId == request.auth.uid);
-  
+
   // الحذف: الطالب أو المعلم أو الأدمن
-  allow delete: if isAdmin() 
-    || (isAuthenticated() && 
-        (resource.data.studentId == request.auth.uid 
+  allow delete: if isAdmin()
+    || (isAuthenticated() &&
+        (resource.data.studentId == request.auth.uid
          || resource.data.teacherId == request.auth.uid));
 }
 ```
+
+## 🔧 **التحديث الجديد:**
+- **تبسيط قاعدة الإنشاء** لتسمح لأي مستخدم مصادق
+- **إصلاح خطأ** "حدث خطأ أثناء إرسال طلب المكالمة"
 
 ## 🔧 **خطوات رفع القواعد:**
 
