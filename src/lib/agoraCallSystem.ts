@@ -62,6 +62,14 @@ export class AgoraCallSystem {
       // حفظ طلب المكالمة في Firebase مع تحديد صحيح للمعلم والطالب
       let studentId, studentName, teacherId, teacherName;
 
+      console.log('🔍 Call system details before assignment:', {
+        userType: this.userType,
+        userId: this.userId,
+        receiverId: receiverId,
+        senderName: senderName,
+        receiverName: receiverName
+      });
+
       if (this.userType === 'student') {
         // الطالب يتصل بالمعلم
         studentId = this.userId;
@@ -74,6 +82,18 @@ export class AgoraCallSystem {
         studentName = receiverName;
         teacherId = this.userId;
         teacherName = senderName;
+      }
+
+      console.log('✅ Final call assignment:', {
+        studentId,
+        studentName,
+        teacherId,
+        teacherName
+      });
+
+      // التحقق من أن جميع القيم المطلوبة موجودة
+      if (!studentId || !teacherId) {
+        throw new Error(`Missing required IDs: studentId=${studentId}, teacherId=${teacherId}`);
       }
 
       const callRequest: Omit<AgoraCallRequest, 'id'> = {
