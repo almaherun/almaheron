@@ -205,6 +205,7 @@ export default function AgoraCallManager({
 
 // Hook لاستخدام نظام المكالمات
 export function useAgoraCallSystem(userId: string, userName: string, userType: 'student' | 'teacher') {
+  console.log('🔧 Creating AgoraCallSystem with:', { userId, userName, userType });
   const [callSystem] = useState(() => createAgoraCallSystem(userId, userType));
   const [waitingCallId, setWaitingCallId] = useState<string | null>(null);
   const { toast } = useToast();

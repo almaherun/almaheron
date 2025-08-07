@@ -46,8 +46,15 @@ export default function TeachersPage() {
         student: student
     });
 
+    // تسجيل معرف الطالب للتأكد
+    console.log('👨‍🎓 Student call system setup:', {
+        studentId: student?.id || '',
+        studentName,
+        student: student
+    });
+
     const { startCall, cancelCall, waitingCallId, callSystem } = useAgoraCallSystem(
-        studentId,
+        student?.id || '',
         studentName,
         'student'
     );
