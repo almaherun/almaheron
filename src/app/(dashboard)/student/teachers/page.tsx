@@ -87,13 +87,28 @@ export default function TeachersPage() {
             const teachers: User[] = [];
             snapshot.forEach((doc) => {
                 const data = doc.data();
+
+                // تحديد حالة الاتصال بناءً على آخر نشاط
+                const lastSeen = data.lastSeen?.toDate?.() || data.lastSeen;
+                const now = new Date();
+                const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+                const isOnline = lastSeen && lastSeen > fiveMinutesAgo;
+
                 teachers.push({
                     uid: doc.id,
                     id: doc.id,
-                    ...data
+                    ...data,
+                    isOnline: isOnline || false, // افتراض أن المعلم متصل إذا كان نشطاً خلال 5 دقائق
+                    lastSeen: lastSeen
                 } as User);
             });
-            
+
+            console.log('👥 Teachers loaded:', teachers.map(t => ({
+                name: t.name,
+                isOnline: t.isOnline,
+                lastSeen: t.lastSeen
+            })));
+
             setTeacherList(teachers);
             setIsLoading(false);
         });

@@ -39,8 +39,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Loading from '@/app/loading';
 import { useUserData } from '@/hooks/useUser';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
+import { doc, updateDoc } from 'firebase/firestore';
 import AgoraCallManager from '@/components/DailyCallManager';
 
 
@@ -95,6 +96,52 @@ function TeacherLayoutContent({
         router.push('/auth');
     }
   }, [userData, loading, router]);
+
+  // تحديث حالة الاتصال للمعلم
+  React.useEffect(() => {
+    if (!userData || userData.type !== 'teacher') return;
+
+    const updateOnlineStatus = async () => {
+      try {
+        const userRef = doc(db, 'users', userData.id);
+        await updateDoc(userRef, {
+          lastSeen: new Date(),
+          isOnline: true
+        });
+        console.log('🟢 Teacher online status updated');
+      } catch (error) {
+        console.error('Error updating online status:', error);
+      }
+    };
+
+    // تحديث فوري
+    updateOnlineStatus();
+
+    // تحديث كل دقيقة
+    const interval = setInterval(updateOnlineStatus, 60000);
+
+    // تحديث عند إغلاق الصفحة
+    const handleBeforeUnload = async () => {
+      try {
+        const userRef = doc(db, 'users', userData.id);
+        await updateDoc(userRef, {
+          lastSeen: new Date(),
+          isOnline: false
+        });
+      } catch (error) {
+        console.error('Error updating offline status:', error);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // تحديث حالة عدم الاتصال عند مغادرة المكون
+      handleBeforeUnload();
+    };
+  }, [userData]);
 
   // تم إزالة النظام القديم - سيتم استخدام DailyCallManager
 

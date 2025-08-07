@@ -60,11 +60,27 @@ export class AgoraCallSystem {
       const channelName = this.generateChannelName();
       
       // حفظ طلب المكالمة في Firebase مع تحديد صحيح للمعلم والطالب
+      let studentId, studentName, teacherId, teacherName;
+
+      if (this.userType === 'student') {
+        // الطالب يتصل بالمعلم
+        studentId = this.userId;
+        studentName = senderName;
+        teacherId = receiverId;
+        teacherName = receiverName;
+      } else {
+        // المعلم يتصل بالطالب
+        studentId = receiverId;
+        studentName = receiverName;
+        teacherId = this.userId;
+        teacherName = senderName;
+      }
+
       const callRequest: Omit<AgoraCallRequest, 'id'> = {
-        studentId: this.userType === 'student' ? this.userId : receiverId,
-        studentName: this.userType === 'student' ? senderName : receiverName,
-        teacherId: this.userType === 'teacher' ? this.userId : receiverId,
-        teacherName: this.userType === 'teacher' ? senderName : receiverName,
+        studentId,
+        studentName,
+        teacherId,
+        teacherName,
         channelName,
         status: 'pending',
         createdAt: serverTimestamp(),
@@ -84,6 +100,7 @@ export class AgoraCallSystem {
         from: senderName,
         to: receiverName,
         type: callType,
+        senderType: this.userType,
         callRequest: {
           studentId: callRequest.studentId,
           studentName: callRequest.studentName,
@@ -92,6 +109,14 @@ export class AgoraCallSystem {
           senderId: callRequest.senderId,
           senderType: callRequest.senderType
         }
+      });
+
+      console.log('🎯 Call routing details:', {
+        senderUserId: this.userId,
+        senderType: this.userType,
+        receiverId: receiverId,
+        expectedTeacherId: this.userType === 'student' ? receiverId : this.userId,
+        expectedStudentId: this.userType === 'student' ? this.userId : receiverId
       });
 
       return docRef.id;
