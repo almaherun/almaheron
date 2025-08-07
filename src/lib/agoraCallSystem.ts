@@ -77,13 +77,21 @@ export class AgoraCallSystem {
       };
 
       const docRef = await addDoc(collection(db, 'agora_call_requests'), callRequest);
-      
+
       console.log('📞 Agora call request sent:', {
         id: docRef.id,
         channelName,
         from: senderName,
         to: receiverName,
-        type: callType
+        type: callType,
+        callRequest: {
+          studentId: callRequest.studentId,
+          studentName: callRequest.studentName,
+          teacherId: callRequest.teacherId,
+          teacherName: callRequest.teacherName,
+          senderId: callRequest.senderId,
+          senderType: callRequest.senderType
+        }
       });
 
       return docRef.id;
@@ -137,9 +145,17 @@ export class AgoraCallSystem {
   // الاستماع لطلبات المكالمات الواردة
   listenForIncomingCalls(callback: (requests: AgoraCallRequest[]) => void): () => void {
     try {
+      const fieldToQuery = this.userType === 'teacher' ? 'teacherId' : 'studentId';
+
+      console.log(`🔍 Setting up call listener for ${this.userType}:`, {
+        userId: this.userId,
+        fieldToQuery: fieldToQuery,
+        userType: this.userType
+      });
+
       const q = query(
         collection(db, 'agora_call_requests'),
-        where(this.userType === 'teacher' ? 'teacherId' : 'studentId', '==', this.userId),
+        where(fieldToQuery, '==', this.userId),
         where('status', '==', 'pending'),
         orderBy('createdAt', 'desc')
       );

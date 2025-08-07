@@ -214,13 +214,22 @@ function TeacherLayoutContent({
         </SidebarInset>
 
         {/* نظام المكالمات الجديد - تم إعادة التفعيل */}
-        {userData && (
-          <AgoraCallManager
-            userId={(userData as any)?.uid || userData?.id || ''}
-            userName={userData?.name || 'معلم'}
-            userType="teacher"
-          />
-        )}
+        {userData && (() => {
+          const teacherId = (userData as any)?.uid || userData?.id || '';
+          console.log('🎓 Teacher call system setup:', {
+            teacherId,
+            teacherName: userData?.name,
+            userData: userData
+          });
+
+          return (
+            <AgoraCallManager
+              userId={teacherId}
+              userName={userData?.name || 'معلم'}
+              userType="teacher"
+            />
+          );
+        })()}
     </>
   );
 }

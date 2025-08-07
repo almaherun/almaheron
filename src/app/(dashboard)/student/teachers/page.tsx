@@ -36,9 +36,18 @@ export default function TeachersPage() {
     const { toast } = useToast();
     
     // استخدام نظام المكالمات الجديد - تم إعادة التفعيل
+    const studentId = student?.id || '';
+    const studentName = student?.name || 'طالب';
+
+    console.log('👨‍🎓 Student call system setup:', {
+        studentId,
+        studentName,
+        student: student
+    });
+
     const { startCall, cancelCall, waitingCallId, callSystem } = useAgoraCallSystem(
-        student?.id || '',
-        student?.name || 'طالب',
+        studentId,
+        studentName,
         'student'
     );
 
@@ -118,7 +127,7 @@ export default function TeachersPage() {
             setCurrentTeacherCall({
                 teacherId: teacher.uid,
                 teacherName: teacher.name,
-                teacherImage: (teacher as any).photoURL || (teacher as any).avatarUrl,
+                teacherImage: (teacher as any).photoURL || (teacher as any).avatarUrl || teacher.avatarUrl || '/default-teacher.png',
                 callType: 'video'
             });
 

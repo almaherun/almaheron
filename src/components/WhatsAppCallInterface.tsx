@@ -134,8 +134,12 @@ export default function WhatsAppCallInterface({
             status === 'calling' ? 'animate-ping bg-blue-400/30' : ''
           }`} />
           <Avatar className="h-40 w-40 border-4 border-white/20 shadow-2xl">
-            <AvatarImage src={teacherImage} />
-            <AvatarFallback className="text-4xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+            <AvatarImage
+              src={teacherImage || '/default-teacher.png'}
+              alt={teacherName}
+              className="object-cover"
+            />
+            <AvatarFallback className="text-4xl bg-gradient-to-br from-green-500 to-blue-600 text-white">
               {teacherName.charAt(0)}
             </AvatarFallback>
           </Avatar>
@@ -257,24 +261,24 @@ export default function WhatsAppCallInterface({
           )}
         </div>
 
-        {/* Additional Controls */}
+        {/* Additional Call Controls */}
         <div className="flex items-center justify-center gap-4 mt-4">
           <Button
             variant="ghost"
             size="sm"
             className="text-white/60 hover:bg-white/10"
           >
-            <MessageCircle className="h-4 w-4 mr-2" />
-            رسالة
+            <Phone className="h-4 w-4 mr-2" />
+            إضافة مكالمة
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
             className="text-white/60 hover:bg-white/10"
           >
-            <Settings className="h-4 w-4 mr-2" />
-            إعدادات
+            <PhoneOff className="h-4 w-4 mr-2" />
+            إنهاء وحفظ
           </Button>
         </div>
 
