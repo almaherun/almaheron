@@ -42,6 +42,7 @@ import { useUserData } from '@/hooks/useUser';
 import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
+import CallDebugButton from '@/components/CallDebugButton';
 import AgoraCallManager from '@/components/DailyCallManager';
 
 
@@ -283,6 +284,9 @@ function TeacherLayoutContent({
             />
           );
         })()}
+
+        {/* زر تشخيص المكالمات */}
+        <CallDebugButton />
     </>
   );
 }

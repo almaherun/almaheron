@@ -175,7 +175,13 @@ export class AgoraCallSystem {
       console.log(`🔍 Setting up call listener for ${this.userType}:`, {
         userId: this.userId,
         fieldToQuery: fieldToQuery,
-        userType: this.userType
+        userType: this.userType,
+        queryDetails: {
+          collection: 'agora_call_requests',
+          where1: `${fieldToQuery} == ${this.userId}`,
+          where2: 'status == pending',
+          orderBy: 'createdAt desc'
+        }
       });
 
       const q = query(
@@ -200,10 +206,20 @@ export class AgoraCallSystem {
             count: requests.length,
             requests: requests.map(r => ({
               id: r.id,
+              studentId: r.studentId,
+              teacherId: r.teacherId,
               from: r.senderName || (this.userType === 'teacher' ? r.studentName : r.teacherName),
               type: r.callType,
-              status: r.status
+              status: r.status,
+              createdAt: r.createdAt
             }))
+          });
+
+          // تسجيل إضافي للمقارنة
+          console.log('🔍 Query details:', {
+            userType: this.userType,
+            userId: this.userId,
+            fieldQueried: this.userType === 'teacher' ? 'teacherId' : 'studentId'
           });
 
           callback(requests);

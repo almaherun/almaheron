@@ -14,6 +14,7 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import AgoraCallManager, { useAgoraCallSystem } from '@/components/DailyCallManager';
 import WhatsAppCallInterface from '@/components/WhatsAppCallInterface';
+import CallDebugButton from '@/components/CallDebugButton';
 
 interface User extends UserData {
     uid: string;
@@ -361,6 +362,9 @@ export default function TeachersPage() {
                     onEndCall={() => handleCancelCall()}
                 />
             )}
+
+            {/* زر تشخيص المكالمات */}
+            <CallDebugButton />
         </div>
     );
 }
