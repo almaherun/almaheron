@@ -8,21 +8,21 @@ import {
   Phone, PhoneOff, Video, VideoOff, 
   User, Clock, MessageCircle, X
 } from 'lucide-react';
-import { DailyCallRequest } from '@/lib/dailyCallSystem';
+import { AgoraCallRequest } from '@/lib/agoraCallSystem';
 
-interface DailyCallNotificationProps {
-  callRequest: DailyCallRequest;
-  onAccept: (roomUrl: string) => void;
+interface AgoraCallNotificationProps {
+  callRequest: AgoraCallRequest;
+  onAccept: (channelName: string, token?: string) => void;
   onReject: () => void;
   onIgnore?: () => void;
 }
 
-export default function DailyCallNotification({
+export default function AgoraCallNotification({
   callRequest,
   onAccept,
   onReject,
   onIgnore
-}: DailyCallNotificationProps) {
+}: AgoraCallNotificationProps) {
   const [timeLeft, setTimeLeft] = useState(120); // دقيقتان
   const [isRinging, setIsRinging] = useState(true);
 
@@ -161,7 +161,7 @@ export default function DailyCallNotification({
             <Button
               size="lg"
               className="rounded-full w-16 h-16 bg-green-500 hover:bg-green-600 border-4 border-white/20"
-              onClick={() => onAccept(callRequest.roomUrl)}
+              onClick={() => onAccept(callRequest.channelName, callRequest.token)}
             >
               {callRequest.callType === 'video' ? (
                 <Video className="h-8 w-8" />
@@ -199,7 +199,7 @@ export default function DailyCallNotification({
           {/* معلومات الخدمة */}
           <div className="mt-6">
             <Badge variant="secondary" className="bg-white/20 text-white text-xs">
-              Daily.co • جودة عالية • مجاني
+              Agora.io • جودة عالمية • مجاني
             </Badge>
           </div>
 

@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserData, UserData } from '@/hooks/useUser';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import DailyCallManager, { useDailyCallSystem } from '@/components/DailyCallManager';
+import AgoraCallManager, { useAgoraCallSystem } from '@/components/DailyCallManager';
 
 interface User extends UserData {
     uid: string;
@@ -35,7 +35,7 @@ export default function TeachersPage() {
     const { toast } = useToast();
     
     // استخدام نظام المكالمات الجديد
-    const { startCall, isWaitingForResponse, cancelCall } = useDailyCallSystem(
+    const { startCall, isWaitingForResponse, cancelCall } = useAgoraCallSystem(
         student?.id || '',
         student?.name || 'طالب',
         'student'
@@ -244,7 +244,7 @@ export default function TeachersPage() {
             
             {/* نظام المكالمات */}
             {student && (
-                <DailyCallManager
+                <AgoraCallManager
                     userId={student.id}
                     userName={student.name || 'طالب'}
                     userType="student"

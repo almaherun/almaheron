@@ -1,26 +1,27 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { createDailyCallSystem, DailyCallRequest } from '@/lib/dailyCallSystem';
-import DailyCallNotification from './DailyCallNotification';
-import DailyVideoCall from './DailyVideoCall';
+import { createAgoraCallSystem, AgoraCallRequest } from '@/lib/agoraCallSystem';
+import AgoraCallNotification from './DailyCallNotification';
+import AgoraVideoCall from './AgoraVideoCall';
 import { useToast } from '@/hooks/use-toast';
 
-interface DailyCallManagerProps {
+interface AgoraCallManagerProps {
   userId: string;
   userName: string;
   userType: 'student' | 'teacher';
 }
 
-export default function DailyCallManager({
+export default function AgoraCallManager({
   userId,
   userName,
   userType
-}: DailyCallManagerProps) {
-  const [callSystem] = useState(() => createDailyCallSystem(userId, userType));
-  const [incomingCall, setIncomingCall] = useState<DailyCallRequest | null>(null);
+}: AgoraCallManagerProps) {
+  const [callSystem] = useState(() => createAgoraCallSystem(userId, userType));
+  const [incomingCall, setIncomingCall] = useState<AgoraCallRequest | null>(null);
   const [activeCall, setActiveCall] = useState<{
-    roomUrl: string;
+    channelName: string;
+    token?: string;
     remoteUserName: string;
   } | null>(null);
   const { toast } = useToast();
@@ -64,20 +65,21 @@ export default function DailyCallManager({
     };
   }, [callSystem, userType, toast]);
 
-  const handleAcceptCall = async (roomUrl: string) => {
+  const handleAcceptCall = async (channelName: string, token?: string) => {
     if (!incomingCall) return;
 
     try {
       // قبول المكالمة
-      await callSystem.acceptCallRequest(incomingCall.id);
-      
+      const callData = await callSystem.acceptCallRequest(incomingCall.id);
+
       // بدء المكالمة
       const remoteUserName = userType === 'teacher' ? incomingCall.studentName : incomingCall.teacherName;
       setActiveCall({
-        roomUrl,
+        channelName: callData.channelName,
+        token: callData.token,
         remoteUserName
       });
-      
+
       setIncomingCall(null);
       
       toast({
@@ -125,8 +127,9 @@ export default function DailyCallManager({
   // عرض المكالمة النشطة
   if (activeCall) {
     return (
-      <DailyVideoCall
-        roomUrl={activeCall.roomUrl}
+      <AgoraVideoCall
+        channelName={activeCall.channelName}
+        token={activeCall.token}
         userName={userName}
         userType={userType}
         onCallEnd={handleEndCall}
@@ -138,7 +141,7 @@ export default function DailyCallManager({
   // عرض إشعار المكالمة الواردة
   if (incomingCall) {
     return (
-      <DailyCallNotification
+      <AgoraCallNotification
         callRequest={incomingCall}
         onAccept={handleAcceptCall}
         onReject={handleRejectCall}
@@ -152,8 +155,8 @@ export default function DailyCallManager({
 }
 
 // Hook لاستخدام نظام المكالمات
-export function useDailyCallSystem(userId: string, userName: string, userType: 'student' | 'teacher') {
-  const [callSystem] = useState(() => createDailyCallSystem(userId, userType));
+export function useAgoraCallSystem(userId: string, userName: string, userType: 'student' | 'teacher') {
+  const [callSystem] = useState(() => createAgoraCallSystem(userId, userType));
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
   const [waitingCallId, setWaitingCallId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -182,14 +185,14 @@ export function useDailyCallSystem(userId: string, userName: string, userType: '
       });
 
       // الاستماع لحالة المكالمة
-      const unsubscribe = callSystem.listenForCallStatus(requestId, (status, roomUrl) => {
-        if (status === 'accepted' && roomUrl) {
+      const unsubscribe = callSystem.listenForCallStatus(requestId, (status, data) => {
+        if (status === 'accepted' && data) {
           setIsWaitingForResponse(false);
           setWaitingCallId(null);
           unsubscribe();
-          
+
           // بدء المكالمة
-          window.open(roomUrl, '_blank');
+          console.log('Call accepted, channel:', data.channelName);
           
           toast({
             title: "تم قبول المكالمة",

@@ -41,7 +41,7 @@ import Loading from '@/app/loading';
 import { useUserData } from '@/hooks/useUser';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
-import DailyCallManager from '@/components/DailyCallManager';
+import AgoraCallManager from '@/components/DailyCallManager';
 
 
 const menuItems = [
@@ -215,7 +215,7 @@ function TeacherLayoutContent({
 
         {/* نظام المكالمات الجديد */}
         {userData && (
-          <DailyCallManager
+          <AgoraCallManager
             userId={(userData as any).uid || userData.id}
             userName={userData.name || 'معلم'}
             userType="teacher"
