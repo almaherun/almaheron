@@ -175,23 +175,47 @@ service cloud.firestore {
     // قواعد الرسائل
     match /messages/{messageId} {
       // القراءة: المرسل أو المستقبل
-      allow read: if isAuthenticated() 
-        && (resource.data.senderId == request.auth.uid 
+      allow read: if isAuthenticated()
+        && (resource.data.senderId == request.auth.uid
             || resource.data.receiverId == request.auth.uid);
-      
+
       // الإنشاء: المستخدمين المصادقين
-      allow create: if isAuthenticated() 
+      allow create: if isAuthenticated()
         && resource.data.senderId == request.auth.uid
         && resource.data.createdAt == request.time;
-      
+
       // التحديث: المرسل فقط (لتحديث حالة القراءة)
-      allow update: if isAuthenticated() 
+      allow update: if isAuthenticated()
         && resource.data.senderId == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
-      
+
       // الحذف: المرسل أو الأدمن
-      allow delete: if isAdmin() 
+      allow delete: if isAdmin()
         || (isAuthenticated() && resource.data.senderId == request.auth.uid);
+    }
+
+    // قواعد طلبات المكالمات Agora.io
+    match /agora_call_requests/{requestId} {
+      // القراءة: الطالب أو المعلم المشارك في المكالمة
+      allow read: if isAuthenticated()
+        && (resource.data.studentId == request.auth.uid
+            || resource.data.teacherId == request.auth.uid);
+
+      // الإنشاء: الطالب أو المعلم
+      allow create: if isAuthenticated()
+        && (resource.data.studentId == request.auth.uid
+            || resource.data.teacherId == request.auth.uid);
+
+      // التحديث: الطالب أو المعلم (لتحديث حالة المكالمة)
+      allow update: if isAuthenticated()
+        && (resource.data.studentId == request.auth.uid
+            || resource.data.teacherId == request.auth.uid);
+
+      // الحذف: الطالب أو المعلم أو الأدمن
+      allow delete: if isAdmin()
+        || (isAuthenticated() &&
+            (resource.data.studentId == request.auth.uid
+             || resource.data.teacherId == request.auth.uid));
     }
     
     // منع الوصول لأي مجموعات أخرى

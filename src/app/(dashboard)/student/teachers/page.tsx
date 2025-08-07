@@ -13,6 +13,7 @@ import { useUserData, UserData } from '@/hooks/useUser';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import AgoraCallManager, { useAgoraCallSystem } from '@/components/DailyCallManager';
+import WhatsAppCallInterface from '@/components/WhatsAppCallInterface';
 
 interface User extends UserData {
     uid: string;
@@ -43,11 +44,18 @@ export default function TeachersPage() {
 
     // حالة الانتظار خاصة بكل معلم
     const [waitingForTeacher, setWaitingForTeacher] = useState<string | null>(null);
+    const [currentTeacherCall, setCurrentTeacherCall] = useState<{
+        teacherId: string;
+        teacherName: string;
+        teacherImage?: string;
+        callType: 'audio' | 'video';
+    } | null>(null);
 
     // الاستماع لتغييرات حالة المكالمة لإزالة حالة الانتظار
     useEffect(() => {
         if (!waitingCallId) {
             setWaitingForTeacher(null);
+            setCurrentTeacherCall(null);
         }
     }, [waitingCallId]);
 
@@ -100,6 +108,12 @@ export default function TeachersPage() {
         try {
             // تعيين حالة الانتظار لهذا المعلم فقط
             setWaitingForTeacher(teacher.uid);
+            setCurrentTeacherCall({
+                teacherId: teacher.uid,
+                teacherName: teacher.name,
+                teacherImage: (teacher as any).photoURL || (teacher as any).avatarUrl,
+                callType: 'video'
+            });
 
             await startCall(teacher.uid, teacher.name, 'video');
 
@@ -111,6 +125,7 @@ export default function TeachersPage() {
         } catch (error) {
             console.error('Error starting call:', error);
             setWaitingForTeacher(null); // إزالة حالة الانتظار عند الخطأ
+            setCurrentTeacherCall(null);
             toast({
                 title: "خطأ",
                 description: "حدث خطأ أثناء إرسال طلب المكالمة",
@@ -120,10 +135,11 @@ export default function TeachersPage() {
     };
 
     // دالة إلغاء المكالمة
-    const handleCancelCall = async (teacherId: string) => {
+    const handleCancelCall = async (teacherId?: string) => {
         try {
             await cancelCall();
             setWaitingForTeacher(null);
+            setCurrentTeacherCall(null);
             toast({
                 title: "تم إلغاء المكالمة",
                 description: "تم إلغاء طلب المكالمة",
@@ -283,6 +299,17 @@ export default function TeachersPage() {
                     userId={student.id}
                     userName={student.name || 'طالب'}
                     userType="student"
+                />
+            )}
+
+            {/* واجهة المكالمة مثل WhatsApp */}
+            {currentTeacherCall && (
+                <WhatsAppCallInterface
+                    teacherName={currentTeacherCall.teacherName}
+                    teacherImage={currentTeacherCall.teacherImage}
+                    callType={currentTeacherCall.callType}
+                    status="calling"
+                    onEndCall={() => handleCancelCall()}
                 />
             )}
         </div>
