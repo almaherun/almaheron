@@ -45,10 +45,26 @@ export default function AgoraCallManager({
 
     try {
       unsubscribe = callSystem.listenForIncomingCalls((requests) => {
-        console.log(`📞 Incoming calls for ${userType}:`, requests);
+        console.log(`📞 Incoming calls for ${userType} (${userId}):`, {
+          count: requests.length,
+          calls: requests.map(r => ({
+            id: r.id,
+            from: userType === 'teacher' ? r.studentName : r.teacherName,
+            type: r.callType,
+            status: r.status
+          }))
+        });
 
         if (requests.length > 0) {
           const latestCall = requests[0];
+
+          console.log('🔔 Processing latest call:', {
+            id: latestCall.id,
+            from: userType === 'teacher' ? latestCall.studentName : latestCall.teacherName,
+            to: userType === 'teacher' ? latestCall.teacherName : latestCall.studentName,
+            type: latestCall.callType,
+            status: latestCall.status
+          });
 
           // التحقق من أن المكالمة لم تنته صلاحيتها
           const now = Date.now();
@@ -62,6 +78,7 @@ export default function AgoraCallManager({
             }
 
             if (expiresAtTime > now) {
+              console.log('✅ Call is valid, showing notification');
               setIncomingCall(latestCall);
 
               // إظهار toast للإشعار
@@ -71,6 +88,8 @@ export default function AgoraCallManager({
                 description: `${callerName} يريد بدء ${latestCall.callType === 'video' ? 'مكالمة مرئية' : 'مكالمة صوتية'}`,
                 className: "bg-green-600 text-white"
               });
+            } else {
+              console.log('⏰ Call expired, ignoring');
             }
           } catch (error) {
             console.error('Error processing call expiry:', error);

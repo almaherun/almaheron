@@ -213,8 +213,8 @@ function TeacherLayoutContent({
             <BottomNavBar items={menuItems} />
         </SidebarInset>
 
-        {/* نظام المكالمات الجديد - معطل مؤقتاً للاختبار */}
-        {false && userData && (
+        {/* نظام المكالمات الجديد - تم إعادة التفعيل */}
+        {userData && (
           <AgoraCallManager
             userId={(userData as any)?.uid || userData?.id || ''}
             userName={userData?.name || 'معلم'}

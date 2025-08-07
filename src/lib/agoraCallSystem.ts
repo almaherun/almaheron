@@ -14,6 +14,11 @@ export interface AgoraCallRequest {
   createdAt: any;
   expiresAt: any;
   callType: 'audio' | 'video';
+
+  // حقول إضافية للتتبع المحسن
+  senderId?: string;
+  senderName?: string;
+  senderType?: 'student' | 'teacher';
 }
 
 export class AgoraCallSystem {
@@ -54,7 +59,7 @@ export class AgoraCallSystem {
     try {
       const channelName = this.generateChannelName();
       
-      // حفظ طلب المكالمة في Firebase
+      // حفظ طلب المكالمة في Firebase مع تحديد صحيح للمعلم والطالب
       const callRequest: Omit<AgoraCallRequest, 'id'> = {
         studentId: this.userType === 'student' ? this.userId : receiverId,
         studentName: this.userType === 'student' ? senderName : receiverName,
@@ -63,8 +68,12 @@ export class AgoraCallSystem {
         channelName,
         status: 'pending',
         createdAt: serverTimestamp(),
-        expiresAt: new Date(Date.now() + 2 * 60 * 1000), // ينتهي خلال دقيقتين
-        callType
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // ينتهي خلال 5 دقائق (زيادة الوقت)
+        callType,
+        // إضافة معلومات إضافية للتتبع
+        senderId: this.userId,
+        senderName: senderName,
+        senderType: this.userType
       };
 
       const docRef = await addDoc(collection(db, 'agora_call_requests'), callRequest);
@@ -146,7 +155,16 @@ export class AgoraCallSystem {
             } as AgoraCallRequest);
           });
 
-          console.log(`📞 Incoming calls for ${this.userType}:`, requests.length);
+          console.log(`📞 Incoming calls for ${this.userType} (${this.userId}):`, {
+            count: requests.length,
+            requests: requests.map(r => ({
+              id: r.id,
+              from: r.senderName || (this.userType === 'teacher' ? r.studentName : r.teacherName),
+              type: r.callType,
+              status: r.status
+            }))
+          });
+
           callback(requests);
         } catch (error) {
           console.error('Error processing incoming calls:', error);

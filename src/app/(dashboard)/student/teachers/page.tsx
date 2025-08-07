@@ -35,17 +35,12 @@ export default function TeachersPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const { toast } = useToast();
     
-    // استخدام نظام المكالمات الجديد - معطل مؤقتاً
-    const startCall = async (receiverId: string, receiverName: string, callType: string) => {};
-    const cancelCall = async () => {};
-    const waitingCallId = null;
-    const callSystem = null;
-
-    // const { startCall, cancelCall, waitingCallId, callSystem } = useAgoraCallSystem(
-    //     student?.id || '',
-    //     student?.name || 'طالب',
-    //     'student'
-    // );
+    // استخدام نظام المكالمات الجديد - تم إعادة التفعيل
+    const { startCall, cancelCall, waitingCallId, callSystem } = useAgoraCallSystem(
+        student?.id || '',
+        student?.name || 'طالب',
+        'student'
+    );
 
     // حالة الانتظار خاصة بكل معلم
     const [waitingForTeacher, setWaitingForTeacher] = useState<string | null>(null);
@@ -111,6 +106,13 @@ export default function TeachersPage() {
         }
 
         try {
+            console.log('🎯 Starting call to teacher:', {
+                teacherId: teacher.uid,
+                teacherName: teacher.name,
+                studentId: student?.id,
+                studentName: student?.name
+            });
+
             // تعيين حالة الانتظار لهذا المعلم فقط
             setWaitingForTeacher(teacher.uid);
             setCurrentTeacherCall({
@@ -120,7 +122,9 @@ export default function TeachersPage() {
                 callType: 'video'
             });
 
-            await startCall(teacher.uid, teacher.name, 'video');
+            const callId = await startCall(teacher.uid, teacher.name, 'video');
+
+            console.log('📞 Call request sent with ID:', callId);
 
             toast({
                 title: "تم إرسال طلب المكالمة",
@@ -128,7 +132,7 @@ export default function TeachersPage() {
                 className: "bg-blue-600 text-white"
             });
         } catch (error) {
-            console.error('Error starting call:', error);
+            console.error('❌ Error starting call:', error);
             setWaitingForTeacher(null); // إزالة حالة الانتظار عند الخطأ
             setCurrentTeacherCall(null);
             toast({
@@ -298,8 +302,8 @@ export default function TeachersPage() {
                 )}
             </div>
             
-            {/* نظام المكالمات - معطل مؤقتاً للاختبار */}
-            {false && student && (
+            {/* نظام المكالمات - تم إعادة التفعيل */}
+            {student && (
                 <AgoraCallManager
                     userId={student?.id || ''}
                     userName={student?.name || 'طالب'}
@@ -307,8 +311,8 @@ export default function TeachersPage() {
                 />
             )}
 
-            {/* واجهة المكالمة مثل WhatsApp - معطلة مؤقتاً */}
-            {false && currentTeacherCall && (
+            {/* واجهة المكالمة مثل WhatsApp */}
+            {currentTeacherCall && (
                 <WhatsAppCallInterface
                     teacherName={currentTeacherCall?.teacherName || ''}
                     teacherImage={currentTeacherCall?.teacherImage}
