@@ -35,12 +35,17 @@ export default function TeachersPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const { toast } = useToast();
     
-    // استخدام نظام المكالمات الجديد
-    const { startCall, cancelCall, waitingCallId, callSystem } = useAgoraCallSystem(
-        student?.id || '',
-        student?.name || 'طالب',
-        'student'
-    );
+    // استخدام نظام المكالمات الجديد - معطل مؤقتاً
+    const startCall = async (receiverId: string, receiverName: string, callType: string) => {};
+    const cancelCall = async () => {};
+    const waitingCallId = null;
+    const callSystem = null;
+
+    // const { startCall, cancelCall, waitingCallId, callSystem } = useAgoraCallSystem(
+    //     student?.id || '',
+    //     student?.name || 'طالب',
+    //     'student'
+    // );
 
     // حالة الانتظار خاصة بكل معلم
     const [waitingForTeacher, setWaitingForTeacher] = useState<string | null>(null);
@@ -293,21 +298,21 @@ export default function TeachersPage() {
                 )}
             </div>
             
-            {/* نظام المكالمات */}
-            {student && (
+            {/* نظام المكالمات - معطل مؤقتاً للاختبار */}
+            {false && student && (
                 <AgoraCallManager
-                    userId={student.id}
-                    userName={student.name || 'طالب'}
+                    userId={student?.id || ''}
+                    userName={student?.name || 'طالب'}
                     userType="student"
                 />
             )}
 
-            {/* واجهة المكالمة مثل WhatsApp */}
-            {currentTeacherCall && (
+            {/* واجهة المكالمة مثل WhatsApp - معطلة مؤقتاً */}
+            {false && currentTeacherCall && (
                 <WhatsAppCallInterface
-                    teacherName={currentTeacherCall.teacherName}
-                    teacherImage={currentTeacherCall.teacherImage}
-                    callType={currentTeacherCall.callType}
+                    teacherName={currentTeacherCall?.teacherName || ''}
+                    teacherImage={currentTeacherCall?.teacherImage}
+                    callType={currentTeacherCall?.callType || 'video'}
                     status="calling"
                     onEndCall={() => handleCancelCall()}
                 />
