@@ -35,11 +35,21 @@ export default function TeachersPage() {
     const { toast } = useToast();
     
     // استخدام نظام المكالمات الجديد
-    const { startCall, isWaitingForResponse, cancelCall } = useAgoraCallSystem(
+    const { startCall, cancelCall, waitingCallId, callSystem } = useAgoraCallSystem(
         student?.id || '',
         student?.name || 'طالب',
         'student'
     );
+
+    // حالة الانتظار خاصة بكل معلم
+    const [waitingForTeacher, setWaitingForTeacher] = useState<string | null>(null);
+
+    // الاستماع لتغييرات حالة المكالمة لإزالة حالة الانتظار
+    useEffect(() => {
+        if (!waitingCallId) {
+            setWaitingForTeacher(null);
+        }
+    }, [waitingCallId]);
 
     // Check if student can make calls
     const canMakeCalls = () => {
@@ -77,7 +87,7 @@ export default function TeachersPage() {
     // دالة بدء المكالمة
     const handleStartCall = async (teacher: User) => {
         if (!student) return;
-        
+
         if (!canMakeCalls()) {
             toast({
                 title: "غير متاح",
@@ -86,16 +96,41 @@ export default function TeachersPage() {
             });
             return;
         }
-        
+
         try {
+            // تعيين حالة الانتظار لهذا المعلم فقط
+            setWaitingForTeacher(teacher.uid);
+
             await startCall(teacher.uid, teacher.name, 'video');
+
+            toast({
+                title: "تم إرسال طلب المكالمة",
+                description: `جاري انتظار رد ${teacher.name}...`,
+                className: "bg-blue-600 text-white"
+            });
         } catch (error) {
             console.error('Error starting call:', error);
+            setWaitingForTeacher(null); // إزالة حالة الانتظار عند الخطأ
             toast({
                 title: "خطأ",
                 description: "حدث خطأ أثناء إرسال طلب المكالمة",
                 variant: "destructive"
             });
+        }
+    };
+
+    // دالة إلغاء المكالمة
+    const handleCancelCall = async (teacherId: string) => {
+        try {
+            await cancelCall();
+            setWaitingForTeacher(null);
+            toast({
+                title: "تم إلغاء المكالمة",
+                description: "تم إلغاء طلب المكالمة",
+                className: "bg-gray-600 text-white"
+            });
+        } catch (error) {
+            console.error('Error canceling call:', error);
         }
     };
 
@@ -217,18 +252,18 @@ export default function TeachersPage() {
                                     <div className="flex flex-col gap-2">
                                         <Button
                                             onClick={() => handleStartCall(teacher)}
-                                            disabled={!canMakeCalls() || isWaitingForResponse}
+                                            disabled={!canMakeCalls() || waitingForTeacher === teacher.uid}
                                             className="bg-green-600 hover:bg-green-700 text-white"
                                         >
                                             <Video className="h-4 w-4 mr-2" />
-                                            {isWaitingForResponse ? 'جاري الاتصال...' : 'بدء مكالمة'}
+                                            {waitingForTeacher === teacher.uid ? 'جاري الاتصال...' : 'بدء مكالمة'}
                                         </Button>
-                                        
-                                        {isWaitingForResponse && (
+
+                                        {waitingForTeacher === teacher.uid && (
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={cancelCall}
+                                                onClick={() => handleCancelCall(teacher.uid)}
                                                 className="text-red-600 border-red-600 hover:bg-red-50"
                                             >
                                                 إلغاء

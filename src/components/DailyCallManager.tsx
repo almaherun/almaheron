@@ -157,7 +157,6 @@ export default function AgoraCallManager({
 // Hook لاستخدام نظام المكالمات
 export function useAgoraCallSystem(userId: string, userName: string, userType: 'student' | 'teacher') {
   const [callSystem] = useState(() => createAgoraCallSystem(userId, userType));
-  const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
   const [waitingCallId, setWaitingCallId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -167,7 +166,7 @@ export function useAgoraCallSystem(userId: string, userName: string, userType: '
     callType: 'audio' | 'video' = 'video'
   ) => {
     try {
-      setIsWaitingForResponse(true);
+      // تم إزالة setIsWaitingForResponse
       
       const requestId = await callSystem.sendCallRequest(
         receiverId,
@@ -187,7 +186,7 @@ export function useAgoraCallSystem(userId: string, userName: string, userType: '
       // الاستماع لحالة المكالمة
       const unsubscribe = callSystem.listenForCallStatus(requestId, (status, data) => {
         if (status === 'accepted' && data) {
-          setIsWaitingForResponse(false);
+          // تم إزالة setIsWaitingForResponse
           setWaitingCallId(null);
           unsubscribe();
 
@@ -200,7 +199,7 @@ export function useAgoraCallSystem(userId: string, userName: string, userType: '
             className: "bg-green-600 text-white"
           });
         } else if (status === 'rejected') {
-          setIsWaitingForResponse(false);
+          // تم إزالة setIsWaitingForResponse
           setWaitingCallId(null);
           unsubscribe();
           
@@ -210,7 +209,7 @@ export function useAgoraCallSystem(userId: string, userName: string, userType: '
             variant: "destructive"
           });
         } else if (status === 'expired') {
-          setIsWaitingForResponse(false);
+          // تم إزالة setIsWaitingForResponse
           setWaitingCallId(null);
           unsubscribe();
           
@@ -224,8 +223,7 @@ export function useAgoraCallSystem(userId: string, userName: string, userType: '
 
       // إلغاء الانتظار بعد دقيقتين
       setTimeout(() => {
-        if (isWaitingForResponse) {
-          setIsWaitingForResponse(false);
+        if (waitingCallId) {
           setWaitingCallId(null);
           unsubscribe();
         }
@@ -233,13 +231,7 @@ export function useAgoraCallSystem(userId: string, userName: string, userType: '
 
     } catch (error) {
       console.error('Error starting call:', error);
-      setIsWaitingForResponse(false);
-      
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء إرسال طلب المكالمة",
-        variant: "destructive"
-      });
+      throw error; // إرجاع الخطأ للمكون الذي يستدعي الدالة
     }
   };
 
@@ -247,7 +239,7 @@ export function useAgoraCallSystem(userId: string, userName: string, userType: '
     if (waitingCallId) {
       try {
         await callSystem.rejectCallRequest(waitingCallId);
-        setIsWaitingForResponse(false);
+        // تم إزالة setIsWaitingForResponse
         setWaitingCallId(null);
         
         toast({
@@ -264,7 +256,7 @@ export function useAgoraCallSystem(userId: string, userName: string, userType: '
   return {
     startCall,
     cancelCall,
-    isWaitingForResponse,
+    waitingCallId,
     callSystem
   };
 }
