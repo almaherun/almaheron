@@ -24,46 +24,71 @@ export default function AgoraCallManager({
     token?: string;
     remoteUserName: string;
   } | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { toast } = useToast();
 
+  // تأخير التهيئة لتجنب التحميل اللانهائي
   useEffect(() => {
-    // الاستماع للمكالمات الواردة
-    const unsubscribe = callSystem.listenForIncomingCalls((requests) => {
-      console.log(`📞 Incoming calls for ${userType}:`, requests);
-      
-      if (requests.length > 0) {
-        const latestCall = requests[0];
-        
-        // التحقق من أن المكالمة لم تنته صلاحيتها
-        const now = Date.now();
-        let expiresAtTime: number;
-        
-        if (latestCall.expiresAt && typeof latestCall.expiresAt === 'object' && 'toDate' in latestCall.expiresAt) {
-          expiresAtTime = (latestCall.expiresAt as any).toDate().getTime();
+    const timer = setTimeout(() => {
+      setIsInitialized(true);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    // عدم البدء حتى يتم التهيئة
+    if (!isInitialized) return;
+
+    // الاستماع للمكالمات الواردة مع معالجة الأخطاء
+    let unsubscribe: (() => void) | null = null;
+
+    try {
+      unsubscribe = callSystem.listenForIncomingCalls((requests) => {
+        console.log(`📞 Incoming calls for ${userType}:`, requests);
+
+        if (requests.length > 0) {
+          const latestCall = requests[0];
+
+          // التحقق من أن المكالمة لم تنته صلاحيتها
+          const now = Date.now();
+          let expiresAtTime: number;
+
+          try {
+            if (latestCall.expiresAt && typeof latestCall.expiresAt === 'object' && 'toDate' in latestCall.expiresAt) {
+              expiresAtTime = (latestCall.expiresAt as any).toDate().getTime();
+            } else {
+              expiresAtTime = latestCall.expiresAt as any;
+            }
+
+            if (expiresAtTime > now) {
+              setIncomingCall(latestCall);
+
+              // إظهار toast للإشعار
+              const callerName = userType === 'teacher' ? latestCall.studentName : latestCall.teacherName;
+              toast({
+                title: "مكالمة واردة",
+                description: `${callerName} يريد بدء ${latestCall.callType === 'video' ? 'مكالمة مرئية' : 'مكالمة صوتية'}`,
+                className: "bg-green-600 text-white"
+              });
+            }
+          } catch (error) {
+            console.error('Error processing call expiry:', error);
+          }
         } else {
-          expiresAtTime = latestCall.expiresAt as any;
+          setIncomingCall(null);
         }
-        
-        if (expiresAtTime > now) {
-          setIncomingCall(latestCall);
-          
-          // إظهار toast للإشعار
-          const callerName = userType === 'teacher' ? latestCall.studentName : latestCall.teacherName;
-          toast({
-            title: "مكالمة واردة",
-            description: `${callerName} يريد بدء ${latestCall.callType === 'video' ? 'مكالمة مرئية' : 'مكالمة صوتية'}`,
-            className: "bg-green-600 text-white"
-          });
-        }
-      } else {
-        setIncomingCall(null);
-      }
-    });
+      });
+    } catch (error) {
+      console.error('Error setting up call listener:', error);
+    }
 
     return () => {
-      unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
-  }, [callSystem, userType, toast]);
+  }, [callSystem, userType, toast, isInitialized]);
 
   const handleAcceptCall = async (channelName: string, token?: string) => {
     if (!incomingCall) return;
@@ -136,6 +161,11 @@ export default function AgoraCallManager({
         remoteUserName={activeCall.remoteUserName}
       />
     );
+  }
+
+  // عدم عرض أي شيء حتى يتم التهيئة
+  if (!isInitialized) {
+    return null;
   }
 
   // عرض إشعار المكالمة الواردة

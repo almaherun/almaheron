@@ -127,28 +127,41 @@ export class AgoraCallSystem {
 
   // الاستماع لطلبات المكالمات الواردة
   listenForIncomingCalls(callback: (requests: AgoraCallRequest[]) => void): () => void {
-    const q = query(
-      collection(db, 'agora_call_requests'),
-      where(this.userType === 'teacher' ? 'teacherId' : 'studentId', '==', this.userId),
-      where('status', '==', 'pending'),
-      orderBy('createdAt', 'desc')
-    );
+    try {
+      const q = query(
+        collection(db, 'agora_call_requests'),
+        where(this.userType === 'teacher' ? 'teacherId' : 'studentId', '==', this.userId),
+        where('status', '==', 'pending'),
+        orderBy('createdAt', 'desc')
+      );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const requests: AgoraCallRequest[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        requests.push({
-          id: doc.id,
-          ...data
-        } as AgoraCallRequest);
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        try {
+          const requests: AgoraCallRequest[] = [];
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            requests.push({
+              id: doc.id,
+              ...data
+            } as AgoraCallRequest);
+          });
+
+          console.log(`📞 Incoming calls for ${this.userType}:`, requests.length);
+          callback(requests);
+        } catch (error) {
+          console.error('Error processing incoming calls:', error);
+          callback([]);
+        }
+      }, (error) => {
+        console.error('Error listening for incoming calls:', error);
+        callback([]);
       });
-      
-      console.log(`📞 Incoming calls for ${this.userType}:`, requests.length);
-      callback(requests);
-    });
 
-    return unsubscribe;
+      return unsubscribe;
+    } catch (error) {
+      console.error('Error setting up incoming calls listener:', error);
+      return () => {}; // إرجاع دالة فارغة في حالة الخطأ
+    }
   }
 
   // الاستماع لحالة طلب مكالمة محدد
