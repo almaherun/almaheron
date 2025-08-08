@@ -15,21 +15,37 @@ export interface SimpleCallRequest {
 
 export class SimpleCallSystem {
   private currentUser: any;
-  
+
   constructor() {
     this.currentUser = auth.currentUser;
     console.log('📞 Simple Call System initialized for:', this.currentUser?.uid);
+
+    // إذا لم يكن المستخدم متصل، انتظر حتى يتصل
+    if (!this.currentUser) {
+      console.log('⏳ Waiting for Firebase Auth...');
+      auth.onAuthStateChanged((user: any) => {
+        if (user) {
+          this.currentUser = user;
+          console.log('✅ Firebase Auth ready:', user.uid);
+        }
+      });
+    }
   }
 
   // إرسال مكالمة
   async makeCall(toUserId: string, toUserName: string, callType: 'video' | 'audio' = 'video'): Promise<string> {
-    if (!this.currentUser) {
-      throw new Error('User not authenticated');
+    // التأكد من وجود المستخدم
+    const user = this.currentUser || auth.currentUser;
+    if (!user) {
+      console.error('❌ No authenticated user found');
+      throw new Error('يجب تسجيل الدخول أولاً');
     }
 
+    this.currentUser = user;
+
     console.log('📞 Making call:', {
-      from: this.currentUser.uid,
-      fromName: this.currentUser.displayName || 'مستخدم',
+      from: user.uid,
+      fromName: user.displayName || 'مستخدم',
       to: toUserId,
       toName: toUserName,
       type: callType
@@ -37,8 +53,8 @@ export class SimpleCallSystem {
 
     try {
       const callData = {
-        from: this.currentUser.uid,
-        fromName: this.currentUser.displayName || 'مستخدم',
+        from: user.uid,
+        fromName: user.displayName || 'مستخدم',
         to: toUserId,
         toName: toUserName,
         status: 'calling',
@@ -57,17 +73,19 @@ export class SimpleCallSystem {
 
   // الاستماع للمكالمات الواردة
   listenForIncomingCalls(callback: (calls: SimpleCallRequest[]) => void): () => void {
-    if (!this.currentUser) {
+    const user = this.currentUser || auth.currentUser;
+    if (!user) {
       console.error('❌ No user authenticated for listening to calls');
       return () => {};
     }
 
-    console.log('👂 Listening for incoming calls for user:', this.currentUser.uid);
+    this.currentUser = user;
+    console.log('👂 Listening for incoming calls for user:', user.uid);
 
     // استعلام مبسط بدون orderBy لتجنب مشكلة Index
     const q = query(
       collection(db, 'simple_calls'),
-      where('to', '==', this.currentUser.uid),
+      where('to', '==', user.uid),
       where('status', '==', 'calling')
     );
 
@@ -133,6 +151,11 @@ export class SimpleCallSystem {
       throw error;
     }
   }
+}
+
+// دالة لإنشاء نظام مكالمات جديد
+export function createSimpleCallSystem(): SimpleCallSystem {
+  return new SimpleCallSystem();
 }
 
 // إنشاء instance واحد للاستخدام
