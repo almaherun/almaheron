@@ -43,6 +43,8 @@ import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import CallDebugButton from '@/components/CallDebugButton';
+import { useSimpleCall } from '@/hooks/useSimpleCall';
+import SimpleCallNotification from '@/components/SimpleCallNotification';
 import AgoraCallManager from '@/components/DailyCallManager';
 
 
@@ -91,6 +93,9 @@ function TeacherLayoutContent({
   // تم إزالة النظام القديم - سيتم استخدام DailyCallManager
   const [theme, setTheme] = React.useState('light');
   const { isMobile, setOpenMobile } = useSidebar();
+
+  // النظام الجديد البسيط للمكالمات
+  const { incomingCalls, acceptCall, rejectCall } = useSimpleCall();
   
   React.useEffect(() => {
     if (!loading && (!userData || userData.type !== 'teacher')) {
@@ -284,6 +289,16 @@ function TeacherLayoutContent({
             />
           );
         })()}
+
+        {/* إشعارات المكالمات الواردة */}
+        {incomingCalls.map((call) => (
+            <SimpleCallNotification
+                key={call.id}
+                call={call}
+                onAccept={() => acceptCall(call.id)}
+                onReject={() => rejectCall(call.id)}
+            />
+        ))}
 
         {/* زر تشخيص المكالمات */}
         <CallDebugButton />

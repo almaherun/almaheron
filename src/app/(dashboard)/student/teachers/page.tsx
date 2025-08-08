@@ -15,6 +15,8 @@ import { db } from '@/lib/firebase';
 import AgoraCallManager, { useAgoraCallSystem } from '@/components/DailyCallManager';
 import WhatsAppCallInterface from '@/components/WhatsAppCallInterface';
 import CallDebugButton from '@/components/CallDebugButton';
+import { useSimpleCall } from '@/hooks/useSimpleCall';
+import SimpleCallNotification from '@/components/SimpleCallNotification';
 
 interface User extends UserData {
     uid: string;
@@ -58,6 +60,9 @@ export default function TeachersPage() {
         studentName,
         'student'
     );
+
+    // النظام الجديد البسيط
+    const { incomingCalls, makeCall: makeSimpleCall, acceptCall, rejectCall } = useSimpleCall();
 
     // حالة الانتظار خاصة بكل معلم
     const [waitingForTeacher, setWaitingForTeacher] = useState<string | null>(null);
@@ -329,7 +334,17 @@ export default function TeachersPage() {
                                             className="bg-green-600 hover:bg-green-700 text-white"
                                         >
                                             <Video className="h-4 w-4 mr-2" />
-                                            {waitingForTeacher === teacher.uid ? 'جاري الاتصال...' : 'بدء مكالمة'}
+                                            {waitingForTeacher === teacher.uid ? 'جاري الاتصال...' : 'بدء مكالمة (قديم)'}
+                                        </Button>
+
+                                        {/* النظام الجديد البسيط */}
+                                        <Button
+                                            onClick={() => makeSimpleCall(teacher.uid, teacher.name, 'video')}
+                                            disabled={!teacher.isOnline}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                                        >
+                                            <Video className="h-4 w-4 mr-2" />
+                                            مكالمة فيديو (جديد)
                                         </Button>
 
                                         {waitingForTeacher === teacher.uid && (
@@ -369,6 +384,16 @@ export default function TeachersPage() {
                     onEndCall={() => handleCancelCall()}
                 />
             )}
+
+            {/* إشعارات المكالمات الواردة */}
+            {incomingCalls.map((call) => (
+                <SimpleCallNotification
+                    key={call.id}
+                    call={call}
+                    onAccept={() => acceptCall(call.id)}
+                    onReject={() => rejectCall(call.id)}
+                />
+            ))}
 
             {/* زر تشخيص المكالمات */}
             <CallDebugButton />
