@@ -13,12 +13,13 @@ import { useUserData, UserData } from '@/hooks/useUser';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import AgoraCallManager, { useAgoraCallSystem } from '@/components/DailyCallManager';
-import WhatsAppCallInterface from '@/components/WhatsAppCallInterface';
+
 import CallDebugButton from '@/components/CallDebugButton';
 import { useSimpleCall } from '@/hooks/useSimpleCall';
 import SimpleCallNotification from '@/components/SimpleCallNotification';
-import { useJitsiCall } from '@/hooks/useJitsiCall';
-import JitsiCallNotification from '@/components/JitsiCallNotification';
+import { useWhatsAppCall } from '@/hooks/useWhatsAppCall';
+import WhatsAppCallNotification from '@/components/WhatsAppCallNotification';
+import WhatsAppCallScreen from '@/components/WhatsAppCallScreen';
 
 interface User extends UserData {
     uid: string;
@@ -57,25 +58,27 @@ export default function TeachersPage() {
         student: student
     });
 
-    const { startCall, cancelCall, waitingCallId, callSystem } = useAgoraCallSystem(
+    const { startCall: startAgoraCall, cancelCall, waitingCallId, callSystem } = useAgoraCallSystem(
         student?.id || '',
         studentName,
         'student'
     );
 
-    // النظام الجديد البسيط
-    const { incomingCalls, makeCall: makeSimpleCall, acceptCall, rejectCall } = useSimpleCall();
+    // النظام البسيط للمكالمات (احتياطي)
+    const { incomingCalls: simpleIncomingCalls, makeCall: makeSimpleCall } = useSimpleCall();
 
-    // نظام Jitsi الجديد - مجاني 100%
+    // نظام WhatsApp Call الجديد - مكالمات فردية مثل WhatsApp
     const {
-        createAndStartCall,
-        incomingSessions,
-        acceptSession,
-        rejectSession,
-        isConnected: isJitsiConnected,
-        isLoading: isJitsiLoading,
-        endCall: endJitsiCall
-    } = useJitsiCall();
+        startCall,
+        incomingCalls: whatsappIncomingCalls,
+        acceptCall: acceptWhatsAppCall,
+        rejectCall: rejectWhatsAppCall,
+        currentCall,
+        isInCall,
+        isLoading: isCallLoading,
+        callStatus,
+        endCall
+    } = useWhatsAppCall();
 
     // حالة الانتظار خاصة بكل معلم
     const [waitingForTeacher, setWaitingForTeacher] = useState<string | null>(null);
@@ -188,7 +191,7 @@ export default function TeachersPage() {
                 callType: 'video'
             });
 
-            const callId = await startCall(teacher.uid, teacher.name, 'video');
+            const callId = await startAgoraCall(teacher.uid, teacher.name, 'video');
 
             console.log('📞 Call request sent with ID:', callId);
 
@@ -350,70 +353,48 @@ export default function TeachersPage() {
                                             {waitingForTeacher === teacher.uid ? 'جاري الاتصال...' : 'بدء مكالمة (قديم)'}
                                         </Button>
 
-                                        {/* نظام Jitsi - مكالمة فيديو */}
+                                        {/* مكالمة فيديو WhatsApp Style */}
                                         <Button
                                             onClick={async () => {
                                                 try {
-                                                    console.log('📹 Starting Jitsi video call...');
-                                                    await createAndStartCall(
-                                                        `مكالمة فيديو مع ${teacher.name}`,
-                                                        'video',
+                                                    console.log('📹 Starting WhatsApp video call...');
+                                                    await startCall(
                                                         teacher.uid,
-                                                        teacher.name
+                                                        teacher.name,
+                                                        'video',
+                                                        (teacher as any).avatar || (teacher as any).photoURL || undefined
                                                     );
                                                 } catch (error) {
-                                                    console.error('❌ Error creating Jitsi video call:', error);
+                                                    console.error('❌ Error starting video call:', error);
                                                 }
                                             }}
-                                            disabled={!teacher.isOnline || isJitsiLoading}
-                                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                                            disabled={!teacher.isOnline || isCallLoading || isInCall}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
                                         >
                                             <Video className="h-4 w-4 mr-2" />
-                                            {isJitsiLoading ? 'جاري الاتصال...' : 'مكالمة فيديو 📹'}
+                                            {isCallLoading ? 'جاري الاتصال...' : 'مكالمة فيديو 📹'}
                                         </Button>
 
-                                        {/* نظام Jitsi - مكالمة صوتية */}
+                                        {/* مكالمة صوتية WhatsApp Style */}
                                         <Button
                                             onClick={async () => {
                                                 try {
-                                                    console.log('🎙️ Starting Jitsi audio call...');
-                                                    await createAndStartCall(
-                                                        `مكالمة صوتية مع ${teacher.name}`,
-                                                        'audio',
+                                                    console.log('🎙️ Starting WhatsApp audio call...');
+                                                    await startCall(
                                                         teacher.uid,
-                                                        teacher.name
+                                                        teacher.name,
+                                                        'audio',
+                                                        (teacher as any).avatar || (teacher as any).photoURL || undefined
                                                     );
                                                 } catch (error) {
-                                                    console.error('❌ Error creating Jitsi audio call:', error);
+                                                    console.error('❌ Error starting audio call:', error);
                                                 }
                                             }}
-                                            disabled={!teacher.isOnline || isJitsiLoading}
-                                            className="bg-green-600 hover:bg-green-700 text-white"
+                                            disabled={!teacher.isOnline || isCallLoading || isInCall}
+                                            className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
                                         >
                                             <Mic className="h-4 w-4 mr-2" />
-                                            {isJitsiLoading ? 'جاري الاتصال...' : 'مكالمة صوتية 🎙️'}
-                                        </Button>
-
-                                        {/* نظام Jitsi - حصة قرآن */}
-                                        <Button
-                                            onClick={async () => {
-                                                try {
-                                                    console.log('📖 Starting Jitsi Quran session...');
-                                                    await createAndStartCall(
-                                                        `حصة قرآن مع ${teacher.name}`,
-                                                        'quran',
-                                                        teacher.uid,
-                                                        teacher.name
-                                                    );
-                                                } catch (error) {
-                                                    console.error('❌ Error creating Jitsi Quran session:', error);
-                                                }
-                                            }}
-                                            disabled={!teacher.isOnline || isJitsiLoading}
-                                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                                        >
-                                            <BookOpen className="h-4 w-4 mr-2" />
-                                            {isJitsiLoading ? 'جاري الاتصال...' : 'حصة قرآن 📖'}
+                                            {isCallLoading ? 'جاري الاتصال...' : 'مكالمة صوتية 🎙️'}
                                         </Button>
 
                                         {waitingForTeacher === teacher.uid && (
@@ -443,36 +424,28 @@ export default function TeachersPage() {
                 />
             )}
 
-            {/* واجهة المكالمة مثل WhatsApp */}
-            {currentTeacherCall && (
-                <WhatsAppCallInterface
-                    teacherName={currentTeacherCall?.teacherName || ''}
-                    teacherImage={currentTeacherCall?.teacherImage}
-                    callType={currentTeacherCall?.callType || 'video'}
-                    status="calling"
-                    onEndCall={() => handleCancelCall()}
-                />
-            )}
 
-            {/* إشعارات المكالمات الواردة */}
-            {incomingCalls.map((call) => (
-                <SimpleCallNotification
+
+
+
+            {/* إشعارات المكالمات الواردة (WhatsApp Style) */}
+            {whatsappIncomingCalls.map((call) => (
+                <WhatsAppCallNotification
                     key={call.id}
                     call={call}
-                    onAccept={() => acceptCall(call.id)}
-                    onReject={() => rejectCall(call.id)}
+                    onAccept={() => acceptWhatsAppCall(call)}
+                    onReject={() => rejectWhatsAppCall(call.id)}
                 />
             ))}
 
-            {/* إشعارات مكالمات Jitsi الواردة */}
-            {incomingSessions.map((session) => (
-                <JitsiCallNotification
-                    key={session.id}
-                    session={session}
-                    onAccept={() => acceptSession(session)}
-                    onReject={() => rejectSession(session.id)}
+            {/* واجهة المكالمة النشطة (WhatsApp Style) */}
+            {isInCall && currentCall && (
+                <WhatsAppCallScreen
+                    call={currentCall}
+                    onEndCall={endCall}
+                    isConnected={callStatus === 'connected'}
                 />
-            ))}
+            )}
 
             {/* زر تشخيص المكالمات */}
             <CallDebugButton />

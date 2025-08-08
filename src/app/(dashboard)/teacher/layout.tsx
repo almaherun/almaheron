@@ -43,8 +43,9 @@ import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import CallDebugButton from '@/components/CallDebugButton';
-import { useJitsiCall } from '@/hooks/useJitsiCall';
-import JitsiCallNotification from '@/components/JitsiCallNotification';
+import { useWhatsAppCall } from '@/hooks/useWhatsAppCall';
+import WhatsAppCallNotification from '@/components/WhatsAppCallNotification';
+import WhatsAppCallScreen from '@/components/WhatsAppCallScreen';
 import AgoraCallManager from '@/components/DailyCallManager';
 
 
@@ -94,8 +95,16 @@ function TeacherLayoutContent({
   const [theme, setTheme] = React.useState('light');
   const { isMobile, setOpenMobile } = useSidebar();
 
-  // نظام Jitsi للمكالمات - مجاني 100%
-  const { incomingSessions, acceptSession, rejectSession } = useJitsiCall();
+  // نظام WhatsApp Call للمكالمات - مكالمات فردية
+  const {
+    incomingCalls,
+    acceptCall,
+    rejectCall,
+    currentCall,
+    isInCall,
+    callStatus,
+    endCall
+  } = useWhatsAppCall();
   
   React.useEffect(() => {
     if (!loading && (!userData || userData.type !== 'teacher')) {
@@ -290,15 +299,24 @@ function TeacherLayoutContent({
           );
         })()}
 
-        {/* إشعارات مكالمات Jitsi الواردة */}
-        {incomingSessions.map((session) => (
-            <JitsiCallNotification
-                key={session.id}
-                session={session}
-                onAccept={() => acceptSession(session)}
-                onReject={() => rejectSession(session.id)}
+        {/* إشعارات المكالمات الواردة (WhatsApp Style) */}
+        {incomingCalls.map((call) => (
+            <WhatsAppCallNotification
+                key={call.id}
+                call={call}
+                onAccept={() => acceptCall(call)}
+                onReject={() => rejectCall(call.id)}
             />
         ))}
+
+        {/* واجهة المكالمة النشطة (WhatsApp Style) */}
+        {isInCall && currentCall && (
+            <WhatsAppCallScreen
+                call={currentCall}
+                onEndCall={endCall}
+                isConnected={callStatus === 'connected'}
+            />
+        )}
 
         {/* زر تشخيص المكالمات */}
         <CallDebugButton />
