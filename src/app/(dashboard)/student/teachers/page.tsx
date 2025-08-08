@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, Video, BookOpen } from 'lucide-react';
+import { Search, Video, BookOpen, Mic } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,8 +17,8 @@ import WhatsAppCallInterface from '@/components/WhatsAppCallInterface';
 import CallDebugButton from '@/components/CallDebugButton';
 import { useSimpleCall } from '@/hooks/useSimpleCall';
 import SimpleCallNotification from '@/components/SimpleCallNotification';
-import { useAdvancedCall } from '@/hooks/useAdvancedCall';
-import AdvancedCallInterface from '@/components/AdvancedCallInterface';
+import { useJitsiCall } from '@/hooks/useJitsiCall';
+import JitsiCallNotification from '@/components/JitsiCallNotification';
 
 interface User extends UserData {
     uid: string;
@@ -66,15 +66,16 @@ export default function TeachersPage() {
     // النظام الجديد البسيط
     const { incomingCalls, makeCall: makeSimpleCall, acceptCall, rejectCall } = useSimpleCall();
 
-    // النظام المتقدم الجديد
+    // نظام Jitsi الجديد - مجاني 100%
     const {
-        createSession,
-        joinSession,
-        currentSession,
-        isConnected,
-        setupMedia,
-        endCall: endAdvancedCall
-    } = useAdvancedCall();
+        createAndStartCall,
+        incomingSessions,
+        acceptSession,
+        rejectSession,
+        isConnected: isJitsiConnected,
+        isLoading: isJitsiLoading,
+        endCall: endJitsiCall
+    } = useJitsiCall();
 
     // حالة الانتظار خاصة بكل معلم
     const [waitingForTeacher, setWaitingForTeacher] = useState<string | null>(null);
@@ -349,72 +350,70 @@ export default function TeachersPage() {
                                             {waitingForTeacher === teacher.uid ? 'جاري الاتصال...' : 'بدء مكالمة (قديم)'}
                                         </Button>
 
-                                        {/* النظام الجديد البسيط */}
+                                        {/* نظام Jitsi - مكالمة فيديو */}
                                         <Button
-                                            onClick={() => makeSimpleCall(teacher.uid, teacher.name, 'video')}
-                                            disabled={!teacher.isOnline}
+                                            onClick={async () => {
+                                                try {
+                                                    console.log('📹 Starting Jitsi video call...');
+                                                    await createAndStartCall(
+                                                        `مكالمة فيديو مع ${teacher.name}`,
+                                                        'video',
+                                                        teacher.uid,
+                                                        teacher.name
+                                                    );
+                                                } catch (error) {
+                                                    console.error('❌ Error creating Jitsi video call:', error);
+                                                }
+                                            }}
+                                            disabled={!teacher.isOnline || isJitsiLoading}
                                             className="bg-blue-600 hover:bg-blue-700 text-white"
                                         >
                                             <Video className="h-4 w-4 mr-2" />
-                                            مكالمة فيديو (بسيط)
+                                            {isJitsiLoading ? 'جاري الاتصال...' : 'مكالمة فيديو 📹'}
                                         </Button>
 
-                                        {/* النظام المتقدم الجديد */}
+                                        {/* نظام Jitsi - مكالمة صوتية */}
                                         <Button
                                             onClick={async () => {
                                                 try {
-                                                    console.log('🚀 Starting advanced call...');
-                                                    await setupMedia(true, true);
-                                                    const sessionId = await createSession(
-                                                        `مكالمة مع ${teacher.name}`,
-                                                        'video'
+                                                    console.log('🎙️ Starting Jitsi audio call...');
+                                                    await createAndStartCall(
+                                                        `مكالمة صوتية مع ${teacher.name}`,
+                                                        'audio',
+                                                        teacher.uid,
+                                                        teacher.name
                                                     );
-                                                    console.log('✅ Advanced session created:', sessionId);
                                                 } catch (error) {
-                                                    console.error('❌ Error creating advanced session:', error);
-                                                    // Fallback للنظام البسيط
-                                                    console.log('🔄 Falling back to simple call...');
-                                                    try {
-                                                        await makeSimpleCall(teacher.uid, teacher.name, 'video');
-                                                    } catch (fallbackError) {
-                                                        console.error('❌ Fallback also failed:', fallbackError);
-                                                    }
+                                                    console.error('❌ Error creating Jitsi audio call:', error);
                                                 }
                                             }}
-                                            disabled={!teacher.isOnline}
-                                            className="bg-purple-600 hover:bg-purple-700 text-white"
-                                        >
-                                            <Video className="h-4 w-4 mr-2" />
-                                            مكالمة متقدمة 🚀
-                                        </Button>
-
-                                        {/* مكالمة قرآن خاصة */}
-                                        <Button
-                                            onClick={async () => {
-                                                try {
-                                                    console.log('📖 Starting Quran session...');
-                                                    await setupMedia(true, true);
-                                                    const sessionId = await createSession(
-                                                        `حصة قرآن مع ${teacher.name}`,
-                                                        'quran'
-                                                    );
-                                                    console.log('✅ Quran session created:', sessionId);
-                                                } catch (error) {
-                                                    console.error('❌ Error creating Quran session:', error);
-                                                    // Fallback للنظام البسيط
-                                                    console.log('🔄 Falling back to simple call...');
-                                                    try {
-                                                        await makeSimpleCall(teacher.uid, teacher.name, 'video');
-                                                    } catch (fallbackError) {
-                                                        console.error('❌ Fallback also failed:', fallbackError);
-                                                    }
-                                                }
-                                            }}
-                                            disabled={!teacher.isOnline}
+                                            disabled={!teacher.isOnline || isJitsiLoading}
                                             className="bg-green-600 hover:bg-green-700 text-white"
                                         >
+                                            <Mic className="h-4 w-4 mr-2" />
+                                            {isJitsiLoading ? 'جاري الاتصال...' : 'مكالمة صوتية 🎙️'}
+                                        </Button>
+
+                                        {/* نظام Jitsi - حصة قرآن */}
+                                        <Button
+                                            onClick={async () => {
+                                                try {
+                                                    console.log('📖 Starting Jitsi Quran session...');
+                                                    await createAndStartCall(
+                                                        `حصة قرآن مع ${teacher.name}`,
+                                                        'quran',
+                                                        teacher.uid,
+                                                        teacher.name
+                                                    );
+                                                } catch (error) {
+                                                    console.error('❌ Error creating Jitsi Quran session:', error);
+                                                }
+                                            }}
+                                            disabled={!teacher.isOnline || isJitsiLoading}
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                        >
                                             <BookOpen className="h-4 w-4 mr-2" />
-                                            حصة قرآن 📖
+                                            {isJitsiLoading ? 'جاري الاتصال...' : 'حصة قرآن 📖'}
                                         </Button>
 
                                         {waitingForTeacher === teacher.uid && (
@@ -465,14 +464,15 @@ export default function TeachersPage() {
                 />
             ))}
 
-            {/* واجهة المكالمة المتقدمة */}
-            {isConnected && currentSession && (
-                <AdvancedCallInterface
-                    session={currentSession}
-                    onEndCall={endAdvancedCall}
-                    isHost={true}
+            {/* إشعارات مكالمات Jitsi الواردة */}
+            {incomingSessions.map((session) => (
+                <JitsiCallNotification
+                    key={session.id}
+                    session={session}
+                    onAccept={() => acceptSession(session)}
+                    onReject={() => rejectSession(session.id)}
                 />
-            )}
+            ))}
 
             {/* زر تشخيص المكالمات */}
             <CallDebugButton />
