@@ -73,7 +73,7 @@ export function useWhatsAppCall() {
     receiverId: string,
     receiverName: string,
     type: 'video' | 'audio' = 'video',
-    receiverAvatar?: string
+    receiverAvatar: string | null = null
   ): Promise<void> => {
     setIsLoading(true);
     setCallStatus('calling');

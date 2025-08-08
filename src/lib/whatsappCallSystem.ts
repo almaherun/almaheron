@@ -6,10 +6,10 @@ export interface WhatsAppCall {
   id: string;
   callerId: string;
   callerName: string;
-  callerAvatar?: string;
+  callerAvatar: string | null;
   receiverId: string;
   receiverName: string;
-  receiverAvatar?: string;
+  receiverAvatar: string | null;
   type: 'video' | 'audio';
   status: 'calling' | 'ringing' | 'accepted' | 'rejected' | 'ended' | 'missed';
   createdAt: Date;
@@ -53,7 +53,7 @@ export class WhatsAppCallSystem {
     receiverId: string,
     receiverName: string,
     type: 'video' | 'audio' = 'video',
-    receiverAvatar?: string
+    receiverAvatar: string | null = null
   ): Promise<string> {
     try {
       const user = auth.currentUser;
@@ -71,10 +71,10 @@ export class WhatsAppCallSystem {
       const callData: Omit<WhatsAppCall, 'id'> = {
         callerId: user.uid,
         callerName: user.displayName || user.email || 'مستخدم',
-        callerAvatar: user.photoURL || undefined,
+        callerAvatar: user.photoURL || null,
         receiverId,
         receiverName,
-        receiverAvatar,
+        receiverAvatar: receiverAvatar || null,
         type,
         status: 'calling',
         createdAt: new Date(),

@@ -362,7 +362,7 @@ export default function TeachersPage() {
                                                         teacher.uid,
                                                         teacher.name,
                                                         'video',
-                                                        (teacher as any).avatar || (teacher as any).photoURL || undefined
+                                                        (teacher as any).avatar || (teacher as any).photoURL || null
                                                     );
                                                 } catch (error) {
                                                     console.error('❌ Error starting video call:', error);
@@ -384,7 +384,7 @@ export default function TeachersPage() {
                                                         teacher.uid,
                                                         teacher.name,
                                                         'audio',
-                                                        (teacher as any).avatar || (teacher as any).photoURL || undefined
+                                                        (teacher as any).avatar || (teacher as any).photoURL || null
                                                     );
                                                 } catch (error) {
                                                     console.error('❌ Error starting audio call:', error);

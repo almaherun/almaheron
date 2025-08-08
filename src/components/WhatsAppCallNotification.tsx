@@ -85,8 +85,8 @@ export default function WhatsAppCallNotification({
         <div className="mb-6 flex justify-center">
           <div className={`relative transition-transform duration-1000 ${isAnimating ? 'scale-110' : 'scale-100'}`}>
             <Avatar className="h-32 w-32 border-4 border-white/30 shadow-2xl">
-              <AvatarImage 
-                src={call.callerAvatar} 
+              <AvatarImage
+                src={call.callerAvatar || undefined}
                 alt={call.callerName}
                 className="object-cover"
               />

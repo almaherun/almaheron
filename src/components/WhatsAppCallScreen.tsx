@@ -139,8 +139,8 @@ export default function WhatsAppCallScreen({
             // واجهة المكالمة الصوتية
             <div className="text-center text-white">
               <Avatar className="h-40 w-40 mx-auto mb-6 border-4 border-white/20">
-                <AvatarImage 
-                  src={call.callerAvatar || call.receiverAvatar} 
+                <AvatarImage
+                  src={call.callerAvatar || call.receiverAvatar || undefined}
                   alt={call.callerName || call.receiverName}
                 />
                 <AvatarFallback className="bg-gray-700 text-white text-4xl">
@@ -177,8 +177,8 @@ export default function WhatsAppCallScreen({
           <div className="flex items-center justify-between text-white">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                <AvatarImage 
-                  src={call.callerAvatar || call.receiverAvatar} 
+                <AvatarImage
+                  src={call.callerAvatar || call.receiverAvatar || undefined}
                   alt={call.callerName || call.receiverName}
                 />
                 <AvatarFallback className="bg-gray-600 text-white text-sm">
