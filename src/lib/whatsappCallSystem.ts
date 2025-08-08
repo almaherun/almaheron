@@ -57,11 +57,20 @@ export class WhatsAppCallSystem {
   ): Promise<string> {
     try {
       const user = auth.currentUser;
+      console.log('👤 Current user:', user ? user.uid : 'null');
+
       if (!user) {
+        console.error('❌ No authenticated user found');
         throw new Error('يجب تسجيل الدخول أولاً');
       }
 
       console.log('📞 Starting WhatsApp-style call:', { receiverId, receiverName, type });
+      console.log('👤 Caller info:', {
+        uid: user.uid,
+        displayName: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL
+      });
 
       // إنشاء غرفة Jitsi فريدة للمكالمة
       const timestamp = Date.now();
@@ -83,9 +92,11 @@ export class WhatsAppCallSystem {
       };
 
       console.log('📝 Call data:', callData);
+      console.log('🔥 Attempting to create document in whatsapp_calls...');
 
       const docRef = await addDoc(collection(db, 'whatsapp_calls'), callData);
-      console.log('✅ Call created:', docRef.id);
+      console.log('✅ Call created successfully:', docRef.id);
+      console.log('📄 Document path:', `whatsapp_calls/${docRef.id}`);
 
       this.currentCall = { ...callData, id: docRef.id };
       

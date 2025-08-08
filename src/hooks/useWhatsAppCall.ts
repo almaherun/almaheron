@@ -86,6 +86,8 @@ export function useWhatsAppCall() {
         throw new Error('يجب تسجيل الدخول أولاً');
       }
 
+      console.log('🚀 Starting call with params:', { receiverId, receiverName, type, receiverAvatar });
+
       const callId = await callSystemRef.current.startCall(
         receiverId,
         receiverName,
@@ -93,7 +95,8 @@ export function useWhatsAppCall() {
         receiverAvatar
       );
 
-      console.log('✅ Call started:', callId);
+      console.log('✅ Call started successfully:', callId);
+      console.log('🎯 Call ID returned:', callId);
       setCallStatus('ringing');
 
       toast({
@@ -107,15 +110,20 @@ export function useWhatsAppCall() {
 
     } catch (error: any) {
       console.error('❌ Error starting call:', error);
+      console.error('❌ Error details:', {
+        message: error?.message,
+        code: error?.code,
+        stack: error?.stack
+      });
       setCallStatus('idle');
-      
+
       toast({
         title: "❌ فشل بدء المكالمة",
-        description: error?.message || 'حدث خطأ غير متوقع',
+        description: error?.message || error?.code || 'حدث خطأ غير متوقع',
         variant: "destructive",
-        duration: 5000,
+        duration: 8000,
       });
-      
+
       throw error;
     } finally {
       setIsLoading(false);
