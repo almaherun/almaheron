@@ -64,11 +64,11 @@ export class SimpleCallSystem {
 
     console.log('👂 Listening for incoming calls for user:', this.currentUser.uid);
 
+    // استعلام مبسط بدون orderBy لتجنب مشكلة Index
     const q = query(
       collection(db, 'simple_calls'),
       where('to', '==', this.currentUser.uid),
-      where('status', '==', 'calling'),
-      orderBy('timestamp', 'desc')
+      where('status', '==', 'calling')
     );
 
     return onSnapshot(q, (snapshot) => {
@@ -78,6 +78,13 @@ export class SimpleCallSystem {
           id: doc.id,
           ...doc.data()
         } as SimpleCallRequest);
+      });
+
+      // ترتيب المكالمات يدوياً بدلاً من orderBy
+      calls.sort((a, b) => {
+        const timeA = a.timestamp?.toDate?.() || new Date(a.timestamp);
+        const timeB = b.timestamp?.toDate?.() || new Date(b.timestamp);
+        return timeB.getTime() - timeA.getTime();
       });
 
       console.log('📞 Incoming calls found:', calls.length);
