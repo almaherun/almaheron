@@ -363,6 +363,7 @@ export default function TeachersPage() {
                                         <Button
                                             onClick={async () => {
                                                 try {
+                                                    console.log('🚀 Starting advanced call...');
                                                     await setupMedia(true, true);
                                                     const sessionId = await createSession(
                                                         `مكالمة مع ${teacher.name}`,
@@ -371,6 +372,13 @@ export default function TeachersPage() {
                                                     console.log('✅ Advanced session created:', sessionId);
                                                 } catch (error) {
                                                     console.error('❌ Error creating advanced session:', error);
+                                                    // Fallback للنظام البسيط
+                                                    console.log('🔄 Falling back to simple call...');
+                                                    try {
+                                                        await makeSimpleCall(teacher.uid, teacher.name, 'video');
+                                                    } catch (fallbackError) {
+                                                        console.error('❌ Fallback also failed:', fallbackError);
+                                                    }
                                                 }
                                             }}
                                             disabled={!teacher.isOnline}
@@ -384,6 +392,7 @@ export default function TeachersPage() {
                                         <Button
                                             onClick={async () => {
                                                 try {
+                                                    console.log('📖 Starting Quran session...');
                                                     await setupMedia(true, true);
                                                     const sessionId = await createSession(
                                                         `حصة قرآن مع ${teacher.name}`,
@@ -392,6 +401,13 @@ export default function TeachersPage() {
                                                     console.log('✅ Quran session created:', sessionId);
                                                 } catch (error) {
                                                     console.error('❌ Error creating Quran session:', error);
+                                                    // Fallback للنظام البسيط
+                                                    console.log('🔄 Falling back to simple call...');
+                                                    try {
+                                                        await makeSimpleCall(teacher.uid, teacher.name, 'video');
+                                                    } catch (fallbackError) {
+                                                        console.error('❌ Fallback also failed:', fallbackError);
+                                                    }
                                                 }
                                             }}
                                             disabled={!teacher.isOnline}

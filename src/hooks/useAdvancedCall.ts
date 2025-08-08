@@ -102,10 +102,20 @@ export function useAdvancedCall() {
     customSettings?: Partial<CallSettings>
   ): Promise<string> => {
     try {
+      console.log('🎯 Starting session creation:', { title, type });
+
       const user = auth.currentUser;
-      if (!user) throw new Error('User not authenticated');
+      if (!user) {
+        console.error('❌ No authenticated user in createSession');
+        throw new Error('يجب تسجيل الدخول أولاً');
+      }
+
+      console.log('✅ User authenticated:', user.uid);
 
       const sessionSettings = { ...callSettings, ...customSettings };
+
+      console.log('📋 Session settings:', sessionSettings);
+
       const sessionId = await callSystemRef.current.createSession(title, type, {
         allowScreenShare: sessionSettings.allowScreenShare,
         allowRecording: sessionSettings.allowRecording,
@@ -114,6 +124,8 @@ export function useAdvancedCall() {
         requireApproval: sessionSettings.requireApproval,
         muteOnJoin: false
       });
+
+      console.log('🎉 Session created with ID:', sessionId);
 
       setIsHost(true);
       setIsConnected(true);
@@ -125,13 +137,18 @@ export function useAdvancedCall() {
       });
 
       return sessionId;
-    } catch (error) {
-      console.error('❌ Error creating session:', error);
+    } catch (error: any) {
+      console.error('❌ Error in createSession:', error);
+
+      const errorMessage = error?.message || 'خطأ غير معروف';
+
       toast({
         title: "❌ فشل إنشاء الجلسة",
-        description: "حدث خطأ أثناء إنشاء الجلسة",
+        description: errorMessage,
         variant: "destructive",
+        duration: 5000,
       });
+
       throw error;
     }
   }, [callSettings, toast]);

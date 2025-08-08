@@ -1,6 +1,6 @@
 // 🚀 نظام مكالمات متقدم ينافس العمالقة - WebRTC مباشر
 import { db, auth } from './firebase';
-import { collection, addDoc, onSnapshot, query, where, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
 
 export interface CallParticipant {
   id: string;
@@ -73,64 +73,87 @@ export class AdvancedCallSystem {
     type: CallSession['type'] = 'video',
     settings: Partial<CallSession['settings']> = {}
   ): Promise<string> {
-    const user = auth.currentUser;
-    if (!user) throw new Error('User not authenticated');
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        console.error('❌ No authenticated user');
+        throw new Error('يجب تسجيل الدخول أولاً');
+      }
 
-    const defaultSettings: CallSession['settings'] = {
-      allowScreenShare: true,
-      allowRecording: true,
-      allowChat: true,
-      allowWhiteboard: type === 'quran',
-      requireApproval: false,
-      muteOnJoin: false,
-      ...settings
-    };
+      console.log('🚀 Creating session:', { title, type, userId: user.uid });
 
-    const sessionData: Omit<CallSession, 'id'> = {
-      hostId: user.uid,
-      hostName: user.displayName || 'المضيف',
-      title,
-      type,
-      status: 'waiting',
-      participants: [],
-      maxParticipants: type === 'quran' ? 10 : 50,
-      isRecording: false,
-      hasWhiteboard: defaultSettings.allowWhiteboard,
-      hasQuranView: type === 'quran',
-      createdAt: new Date(),
-      settings: defaultSettings
-    };
+      const defaultSettings: CallSession['settings'] = {
+        allowScreenShare: true,
+        allowRecording: true,
+        allowChat: true,
+        allowWhiteboard: type === 'quran',
+        requireApproval: false,
+        muteOnJoin: false,
+        ...settings
+      };
 
-    const docRef = await addDoc(collection(db, 'call_sessions'), sessionData);
-    console.log('✅ Session created:', docRef.id);
-    
-    this.isHost = true;
-    return docRef.id;
+      // بيانات الجلسة المبسطة
+      const sessionData = {
+        hostId: user.uid,
+        hostName: user.displayName || user.email || 'المضيف',
+        title,
+        type,
+        status: 'waiting',
+        participants: [],
+        maxParticipants: type === 'quran' ? 10 : 50,
+        isRecording: false,
+        hasWhiteboard: defaultSettings.allowWhiteboard,
+        hasQuranView: type === 'quran',
+        createdAt: new Date(),
+        settings: defaultSettings
+      };
+
+      console.log('📝 Session data:', sessionData);
+
+      const docRef = await addDoc(collection(db, 'advanced_call_sessions'), sessionData);
+      console.log('✅ Session created successfully:', docRef.id);
+
+      this.isHost = true;
+      return docRef.id;
+    } catch (error: any) {
+      console.error('❌ Error creating session:', error);
+      throw new Error(`فشل إنشاء الجلسة: ${error?.message || 'خطأ غير معروف'}`);
+    }
   }
 
   // الانضمام لجلسة مكالمة
   async joinSession(sessionId: string): Promise<void> {
-    const user = auth.currentUser;
-    if (!user) throw new Error('User not authenticated');
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        console.error('❌ No authenticated user for joining');
+        throw new Error('يجب تسجيل الدخول أولاً');
+      }
 
-    console.log('🔗 Joining session:', sessionId);
+      console.log('🔗 Joining session:', sessionId);
 
-    // إعداد الوسائط المحلية
-    await this.setupLocalMedia();
+      // إعداد الوسائط المحلية
+      await this.setupLocalMedia();
 
-    // إضافة المشارك للجلسة
-    const participant: CallParticipant = {
-      id: user.uid,
-      name: user.displayName || 'مشارك',
-      isHost: false,
-      isMuted: false,
-      isVideoOff: false,
-      isHandRaised: false,
-      joinedAt: new Date()
-    };
+      // إضافة المشارك للجلسة
+      const participant = {
+        id: user.uid,
+        name: user.displayName || user.email || 'مشارك',
+        isHost: false,
+        isMuted: false,
+        isVideoOff: false,
+        isHandRaised: false,
+        joinedAt: new Date()
+      };
 
-    // تحديث قاعدة البيانات
-    // سيتم إضافة المنطق هنا
+      console.log('✅ Participant ready:', participant);
+
+      // تحديث قاعدة البيانات
+      // سيتم إضافة المنطق لاحقاً
+    } catch (error: any) {
+      console.error('❌ Error joining session:', error);
+      throw new Error(`فشل الانضمام للجلسة: ${error?.message || 'خطأ غير معروف'}`);
+    }
   }
 
   // إعداد الوسائط المحلية
