@@ -1,5 +1,5 @@
 // نظام مكالمات باستخدام Agora.io - 10000 دقيقة مجانية شهرياً
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import { collection, addDoc, doc, updateDoc, onSnapshot, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
 
 export interface AgoraCallRequest {
@@ -27,9 +27,31 @@ export class AgoraCallSystem {
   private appId: string;
 
   constructor(userId: string, userType: 'student' | 'teacher') {
-    this.userId = userId;
+    console.log('🔧 AgoraCallSystem constructor called with:', { userId, userType });
+
+    // التحقق من userId وإصلاحه إذا كان فارغاً
+    if (!userId || userId.trim() === '') {
+      console.warn('⚠️ AgoraCallSystem: userId is empty, trying Firebase Auth fallback');
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        console.log('✅ Using Firebase Auth UID as fallback:', currentUser.uid);
+        this.userId = currentUser.uid;
+      } else {
+        console.error('❌ No Firebase Auth user available');
+        throw new Error(`AgoraCallSystem: userId cannot be empty and no Firebase Auth user available. Received: "${userId}"`);
+      }
+    } else {
+      this.userId = userId;
+    }
+
     this.userType = userType;
     this.appId = process.env.NEXT_PUBLIC_AGORA_APP_ID || '';
+
+    console.log('✅ AgoraCallSystem initialized:', {
+      userId: this.userId,
+      userType: this.userType,
+      appId: this.appId ? 'configured' : 'missing'
+    });
   }
 
   // إنشاء اسم قناة فريد
