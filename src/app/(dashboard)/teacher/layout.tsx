@@ -103,18 +103,57 @@ function TeacherLayoutContent({
     endCall
   } = useSimpleCall();
 
-  // تسجيل معلومات المعلم للتشخيص
+  // تشخيص شامل للمعلم
   React.useEffect(() => {
     if (userData) {
       const currentUser = auth.currentUser;
-      console.log('👨‍🏫 Teacher info for call system:', {
+      console.log('👨‍🏫 TEACHER DIAGNOSTIC INFO:', {
         userDataId: userData.id,
         userDataAuthUid: (userData as any).authUid,
         currentUserUid: currentUser?.uid,
         currentUserEmail: currentUser?.email,
         currentUserDisplayName: currentUser?.displayName,
-        userData: userData
+        userData: userData,
+        '🎯 WHICH_ID_IS_USED_FOR_CALLS': currentUser?.uid
       });
+
+      // فحص مباشر لقاعدة البيانات
+      const checkCalls = async () => {
+        try {
+          const { collection, query, where, getDocs } = await import('firebase/firestore');
+
+          // فحص جميع المكالمات المعلقة
+          const allCallsQuery = query(
+            collection(db, 'simple_calls'),
+            where('status', '==', 'pending')
+          );
+
+          const snapshot = await getDocs(allCallsQuery);
+
+          console.log('🔍 MANUAL DATABASE CHECK:', {
+            totalPendingCalls: snapshot.size,
+            teacherIdToMatch: currentUser?.uid,
+            calls: snapshot.docs.map(doc => ({
+              id: doc.id,
+              teacherId: doc.data().teacherId,
+              studentId: doc.data().studentId,
+              teacherName: doc.data().teacherName,
+              studentName: doc.data().studentName,
+              status: doc.data().status,
+              '🎯 IS_FOR_ME': doc.data().teacherId === currentUser?.uid
+            }))
+          });
+
+        } catch (error) {
+          console.error('❌ Manual check failed:', error);
+        }
+      };
+
+      // فحص كل 5 ثوان
+      const interval = setInterval(checkCalls, 5000);
+      checkCalls(); // فحص فوري
+
+      return () => clearInterval(interval);
     }
   }, [userData]);
 
@@ -289,6 +328,44 @@ function TeacherLayoutContent({
             <main className="flex-1 overflow-auto p-4 sm:p-6 pb-20 md:pb-6">{children}</main>
             <BottomNavBar items={menuItems} />
         </SidebarInset>
+
+        {/* زر اختبار للمعلم */}
+        {userData && (
+          <div className="fixed bottom-4 left-4 z-40">
+            <button
+              onClick={async () => {
+                const currentUser = auth.currentUser;
+                console.log('🧪 MANUAL TEST - Teacher listening for:', currentUser?.uid);
+
+                try {
+                  const { collection, query, where, getDocs } = await import('firebase/firestore');
+                  const testQuery = query(
+                    collection(db, 'simple_calls'),
+                    where('status', '==', 'pending')
+                  );
+
+                  const snapshot = await getDocs(testQuery);
+                  console.log('🧪 MANUAL TEST RESULTS:', {
+                    totalCalls: snapshot.size,
+                    myId: currentUser?.uid,
+                    callsForMe: snapshot.docs.filter(doc => doc.data().teacherId === currentUser?.uid).length,
+                    allCalls: snapshot.docs.map(doc => ({
+                      id: doc.id,
+                      teacherId: doc.data().teacherId,
+                      studentName: doc.data().studentName,
+                      isForMe: doc.data().teacherId === currentUser?.uid
+                    }))
+                  });
+                } catch (error) {
+                  console.error('❌ Test failed:', error);
+                }
+              }}
+              className="bg-red-500 text-white px-3 py-2 rounded text-sm"
+            >
+              🧪 Test Calls
+            </button>
+          </div>
+        )}
 
         {/* إشعارات المكالمات الواردة */}
         {incomingCalls.map((call) => (

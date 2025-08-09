@@ -55,7 +55,7 @@ export default function TeachersPage() {
     // حالة منفصلة لكل معلم
     const [callingTeacher, setCallingTeacher] = useState<string | null>(null);
 
-    // جلب قائمة المعلمين
+    // جلب قائمة المعلمين مع تشخيص
     useEffect(() => {
         if (!student) return;
 
@@ -66,6 +66,16 @@ export default function TeachersPage() {
 
         const unsubscribe = onSnapshot(teachersQuery, (snapshot) => {
             const teachers: User[] = [];
+
+            console.log('👥 TEACHERS DIAGNOSTIC:', {
+                totalTeachers: snapshot.size,
+                studentInfo: {
+                    id: student.id,
+                    authUid: (student as any).authUid,
+                    name: student.name
+                }
+            });
+
             snapshot.forEach((doc) => {
                 const data = doc.data();
 
@@ -75,8 +85,17 @@ export default function TeachersPage() {
                 const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
                 const isOnline = lastSeen && lastSeen > fiveMinutesAgo;
 
-                // استخدام نفس المعرف الذي يستخدمه المعلم (Firebase Auth UID)
+                // استخدام Firebase Auth UID كمعرف أساسي
                 const teacherId = data.authUid || doc.id;
+
+                console.log('👨‍🏫 Teacher data:', {
+                    docId: doc.id,
+                    authUid: data.authUid,
+                    name: data.name,
+                    email: data.email,
+                    '🎯 FINAL_TEACHER_ID': teacherId,
+                    isOnline: isOnline
+                });
 
                 teachers.push({
                     uid: teacherId,
