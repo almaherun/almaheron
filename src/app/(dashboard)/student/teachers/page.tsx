@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Search, MessageCircle, BookOpen, Star, Video } from 'lucide-react';
@@ -52,6 +52,9 @@ export default function TeachersPage() {
         endCall
     } = useSimpleCall();
 
+    // حالة منفصلة لكل معلم
+    const [callingTeacher, setCallingTeacher] = useState<string | null>(null);
+
     // جلب قائمة المعلمين
     useEffect(() => {
         if (!student) return;
@@ -102,12 +105,30 @@ export default function TeachersPage() {
             return;
         }
 
+        // تعيين حالة الاتصال لهذا المعلم فقط
+        setCallingTeacher(teacher.uid);
+
         try {
+            console.log('🚀 Starting call to teacher:', {
+                teacherId: teacher.uid,
+                teacherName: teacher.name,
+                teacherAuthUid: (teacher as any).authUid,
+                teacherDocId: teacher.id
+            });
+
             await sendCall(teacher.uid, teacher.name);
         } catch (error) {
             console.error('Error starting call:', error);
+            setCallingTeacher(null); // إزالة حالة الاتصال عند الخطأ
         }
     };
+
+    // إزالة حالة الاتصال عند انتهاء المكالمة
+    React.useEffect(() => {
+        if (!isCallLoading) {
+            setCallingTeacher(null);
+        }
+    }, [isCallLoading]);
 
     // دالة التواصل مع المعلم عبر الدردشة
     const handleContactTeacher = (teacher: User) => {
@@ -244,11 +265,11 @@ export default function TeachersPage() {
                                         {/* زر المكالمة */}
                                         <Button
                                             onClick={() => handleStartCall(teacher)}
-                                            disabled={!teacher.isOnline || isCallLoading}
+                                            disabled={!teacher.isOnline || callingTeacher === teacher.uid}
                                             className="w-full bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
                                         >
                                             <Video className="h-4 w-4 mr-2" />
-                                            {isCallLoading ? 'جاري الاتصال...' : '📞 مكالمة فيديو'}
+                                            {callingTeacher === teacher.uid ? 'جاري الاتصال...' : '📞 مكالمة فيديو'}
                                         </Button>
 
                                         {/* زر الدردشة */}

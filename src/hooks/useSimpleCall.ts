@@ -17,25 +17,59 @@ export function useSimpleCall() {
 
   // تهيئة النظام
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) return;
+    const initializeSystem = () => {
+      const user = auth.currentUser;
+      if (!user) {
+        console.log('⚠️ No authenticated user, waiting...');
+        return;
+      }
 
-    const userType = window.location.pathname.includes('/teacher') ? 'teacher' : 'student';
-    callSystemRef.current = createSimpleCallSystem(user.uid, userType);
+      const userType = window.location.pathname.includes('/teacher') ? 'teacher' : 'student';
+      callSystemRef.current = createSimpleCallSystem(user.uid, userType);
 
-    console.log('📞 Simple call system initialized:', {
-      userId: user.uid,
-      userType
+      console.log('📞 Simple call system initialized:', {
+        userId: user.uid,
+        userType,
+        email: user.email,
+        displayName: user.displayName
+      });
+    };
+
+    // جرب التهيئة فوراً
+    initializeSystem();
+
+    // إذا لم يكن المستخدم مسجل دخول، انتظر
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user && !callSystemRef.current) {
+        console.log('🔄 Auth state changed, initializing...');
+        initializeSystem();
+      }
     });
+
+    return () => unsubscribe();
   }, []);
 
   // الاستماع للمكالمات
   useEffect(() => {
-    if (!callSystemRef.current) return;
+    if (!callSystemRef.current) {
+      console.log('⚠️ Call system not ready, skipping listener setup');
+      return;
+    }
+
+    console.log('🎧 Setting up call listener in hook...');
 
     const unsubscribe = callSystemRef.current.listenForIncomingCalls((calls: SimpleCallRequest[]) => {
+      console.log('📞 Hook received calls update:', {
+        count: calls.length,
+        calls: calls.map(c => ({
+          id: c.id,
+          from: c.studentName,
+          to: c.teacherName
+        }))
+      });
+
       setIncomingCalls(calls);
-      
+
       if (calls.length > 0) {
         const latestCall = calls[0];
         toast({

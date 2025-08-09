@@ -37,10 +37,10 @@ export class SimpleCallSystem {
       if (!user) throw new Error('المستخدم غير مسجل دخول');
 
       const channelName = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       const callRequest: Omit<SimpleCallRequest, 'id'> = {
         studentId: user.uid,
-        studentName: user.displayName || 'طالب',
+        studentName: user.displayName || user.email || 'طالب',
         teacherId: teacherId,
         teacherName: teacherName,
         channelName: channelName,
@@ -49,9 +49,18 @@ export class SimpleCallSystem {
         callType: 'video'
       };
 
+      console.log('📞 Sending call request:', {
+        studentId: callRequest.studentId,
+        studentName: callRequest.studentName,
+        teacherId: callRequest.teacherId,
+        teacherName: callRequest.teacherName,
+        channel: channelName,
+        collection: 'simple_calls'
+      });
+
       const docRef = await addDoc(collection(db, 'simple_calls'), callRequest);
-      
-      console.log('📞 Call request sent:', {
+
+      console.log('✅ Call request saved to Firestore:', {
         id: docRef.id,
         from: callRequest.studentName,
         to: callRequest.teacherName,
@@ -127,12 +136,33 @@ export class SimpleCallSystem {
   listenForIncomingCalls(callback: (calls: SimpleCallRequest[]) => void): () => void {
     try {
       const fieldToQuery = this.userType === 'teacher' ? 'teacherId' : 'studentId';
-      
-      console.log('🎧 Listening for calls:', {
+
+      console.log('🎧 Setting up call listener:', {
         userType: this.userType,
         userId: this.userId,
-        field: fieldToQuery
+        field: fieldToQuery,
+        collection: 'simple_calls'
       });
+
+      // استعلام تجريبي لفحص جميع المكالمات المعلقة
+      const testQuery = query(
+        collection(db, 'simple_calls'),
+        where('status', '==', 'pending')
+      );
+
+      onSnapshot(testQuery, (testSnapshot) => {
+        console.log('🧪 All pending calls in database:', {
+          total: testSnapshot.size,
+          calls: testSnapshot.docs.map(doc => ({
+            id: doc.id,
+            studentId: doc.data().studentId,
+            teacherId: doc.data().teacherId,
+            studentName: doc.data().studentName,
+            teacherName: doc.data().teacherName,
+            status: doc.data().status
+          }))
+        });
+      }, { includeMetadataChanges: false });
 
       const q = query(
         collection(db, 'simple_calls'),
@@ -141,30 +171,53 @@ export class SimpleCallSystem {
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
+        console.log('🔍 Firestore snapshot received:', {
+          size: snapshot.size,
+          empty: snapshot.empty,
+          userType: this.userType,
+          userId: this.userId
+        });
+
         const calls: SimpleCallRequest[] = [];
-        
+
         snapshot.forEach((doc) => {
+          const data = doc.data();
+          console.log('📄 Call document:', {
+            id: doc.id,
+            studentId: data.studentId,
+            teacherId: data.teacherId,
+            status: data.status,
+            studentName: data.studentName,
+            teacherName: data.teacherName
+          });
+
           calls.push({
             id: doc.id,
-            ...doc.data()
+            ...data
           } as SimpleCallRequest);
         });
 
-        console.log('📞 Incoming calls:', {
+        console.log('📞 Processed incoming calls:', {
+          userType: this.userType,
+          userId: this.userId,
           count: calls.length,
           calls: calls.map(c => ({
             id: c.id,
             from: c.studentName,
-            to: c.teacherName
+            to: c.teacherName,
+            status: c.status
           }))
         });
 
         callback(calls);
+      }, (error) => {
+        console.error('❌ Firestore listener error:', error);
+        callback([]);
       });
 
       return unsubscribe;
     } catch (error) {
-      console.error('❌ Error listening for calls:', error);
+      console.error('❌ Error setting up call listener:', error);
       return () => {};
     }
   }
