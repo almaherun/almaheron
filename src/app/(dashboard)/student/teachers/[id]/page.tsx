@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Check, Star, Plus, RotateCw } from 'lucide-react';
 import Loading from '@/app/loading';
 import { useToast } from '@/hooks/use-toast';
+import ProfessionalVideoCall from '@/components/ProfessionalVideoCall';
 
 export default function TeacherProfilePage() {
     const router = useRouter();
@@ -140,6 +141,29 @@ export default function TeacherProfilePage() {
                             </li>
                         ))}
                     </ul>
+                </CardContent>
+            </Card>
+
+            {/* نظام المكالمات الاحترافي الجديد */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <span className="text-2xl">📞</span>
+                        مكالمة مع المعلم
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {student && teacher && (
+                        <ProfessionalVideoCall
+                            userId={student.id}
+                            userType="student"
+                            userName={student.name}
+                            targetTeacherId={teacher.uid}
+                            targetTeacherName={teacher.name}
+                            targetTeacherImage={teacher.avatarUrl}
+                            currentSurah="سورة البقرة"
+                        />
+                    )}
                 </CardContent>
             </Card>
         </div>

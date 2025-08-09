@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* استيراد الثيم الإسلامي الاحترافي */
+@import url('../styles/islamic-theme.css');
+
 /* RTL Support */
 html {
   direction: rtl;

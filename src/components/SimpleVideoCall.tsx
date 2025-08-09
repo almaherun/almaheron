@@ -106,11 +106,40 @@ export default function SimpleVideoCall({ call, onEndCall }: SimpleVideoCallProp
 
   const loadAgoraSDK = (): Promise<void> => {
     return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://download.agora.io/sdk/release/AgoraRTC_N-4.19.1.js';
-      script.onload = () => resolve();
-      script.onerror = reject;
-      document.head.appendChild(script);
+      // جرب عدة مصادر لـ Agora SDK
+      const sources = [
+        'https://download.agora.io/sdk/release/AgoraRTC_N-4.19.1.js',
+        'https://cdn.jsdelivr.net/npm/agora-rtc-sdk-ng@4.19.1/AgoraRTC_N.js',
+        'https://unpkg.com/agora-rtc-sdk-ng@4.19.1/AgoraRTC_N.js'
+      ];
+
+      let currentIndex = 0;
+
+      const tryLoadScript = () => {
+        if (currentIndex >= sources.length) {
+          reject(new Error('فشل في تحميل Agora SDK من جميع المصادر'));
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.src = sources[currentIndex];
+
+        script.onload = () => {
+          console.log(`✅ Agora SDK loaded from: ${sources[currentIndex]}`);
+          resolve();
+        };
+
+        script.onerror = () => {
+          console.log(`❌ Failed to load from: ${sources[currentIndex]}`);
+          currentIndex++;
+          document.head.removeChild(script);
+          tryLoadScript();
+        };
+
+        document.head.appendChild(script);
+      };
+
+      tryLoadScript();
     });
   };
 

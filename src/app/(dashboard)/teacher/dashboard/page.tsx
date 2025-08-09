@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dialog';
 import { useUserData } from '@/hooks/useUser';
 import { collection, query, where, onSnapshot, orderBy, limit, doc } from 'firebase/firestore';
+import ProfessionalVideoCall from '@/components/ProfessionalVideoCall';
 
 
 const statusMap = {
@@ -165,6 +166,29 @@ export default function TeacherDashboardPage() {
                         <p>لا توجد مكالمات حديثة</p>
                         <p className="text-sm mt-2">ستظهر هنا المكالمات مع الطلاب</p>
                     </div>
+                </CardContent>
+            </Card>
+
+            {/* نظام المكالمات الاحترافي الجديد */}
+            <Card className="col-span-full">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <span className="text-2xl">📞</span>
+                        نظام المكالمات المباشر
+                    </CardTitle>
+                    <CardDescription>
+                        نظام مكالمات فيديو احترافي مخصص لأكاديمية تحفيظ القرآن
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {teacher && (
+                        <ProfessionalVideoCall
+                            userId={teacher.id}
+                            userType="teacher"
+                            userName={teacher.name}
+                            currentSurah="سورة البقرة"
+                        />
+                    )}
                 </CardContent>
             </Card>
         </div>

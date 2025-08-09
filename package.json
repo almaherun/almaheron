@@ -63,6 +63,7 @@
     "dompurify": "^3.2.6",
     "embla-carousel-react": "^8.6.0",
     "firebase": "^10.14.1",
+    "framer-motion": "^12.23.12",
     "helmet": "^8.1.0",
     "jose": "^6.0.12",
     "jsdom": "^26.1.0",
