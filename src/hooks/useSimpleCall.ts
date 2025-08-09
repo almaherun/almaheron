@@ -39,7 +39,7 @@ export function useSimpleCall() {
     initializeSystem();
 
     // إذا لم يكن المستخدم مسجل دخول، انتظر
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged((user: any) => {
       if (user && !callSystemRef.current) {
         console.log('🔄 Auth state changed, initializing...');
         initializeSystem();

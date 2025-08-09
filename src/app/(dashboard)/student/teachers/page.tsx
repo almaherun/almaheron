@@ -156,6 +156,7 @@ export default function TeachersPage() {
             }, 1000);
             return () => clearTimeout(timer);
         }
+        return undefined;
     }, [isCallLoading]);
 
     // إزالة حالة الاتصال عند بدء مكالمة فعلية

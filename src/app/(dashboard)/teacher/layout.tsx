@@ -155,6 +155,7 @@ function TeacherLayoutContent({
 
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [userData]);
 
 

@@ -59,7 +59,7 @@ export class SimpleCallSystem {
       });
 
       // محاولة حفظ المكالمة مع إعادة المحاولة
-      let docRef;
+      let docRef: any;
       let attempts = 0;
       const maxAttempts = 3;
 
