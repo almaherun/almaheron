@@ -1,8 +1,9 @@
-// نظام مكالمات باستخدام Agora.io - 10000 دقيقة مجانية شهرياً
+// 🚀 نظام مكالمات Agora.io الموحد - يحل محل جميع الأنظمة الأخرى
 import { db, auth } from './firebase';
-import { collection, addDoc, doc, updateDoc, onSnapshot, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, onSnapshot, query, where, orderBy, serverTimestamp, deleteDoc } from 'firebase/firestore';
 
-export interface AgoraCallRequest {
+// واجهة موحدة لجميع أنواع المكالمات
+export interface UnifiedCallRequest {
   id: string;
   studentId: string;
   studentName: string;
@@ -10,35 +11,65 @@ export interface AgoraCallRequest {
   teacherName: string;
   channelName: string;
   token?: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'expired';
+  status: 'pending' | 'accepted' | 'rejected' | 'expired' | 'ended';
   createdAt: any;
   expiresAt: any;
   callType: 'audio' | 'video';
 
-  // حقول إضافية للتتبع المحسن
-  senderId?: string;
-  senderName?: string;
-  senderType?: 'student' | 'teacher';
+  // معلومات المرسل والمستقبل
+  senderId: string;
+  senderName: string;
+  senderType: 'student' | 'teacher';
+  receiverId: string;
+  receiverName: string;
+
+  // أنماط المكالمات المختلفة
+  callStyle: 'whatsapp' | 'simple' | 'professional'; // نمط المكالمة
+  isDirectCall: boolean; // مكالمة مباشرة أم طلب مكالمة
+
+  // معلومات إضافية
+  callerAvatar?: string | null;
+  receiverAvatar?: string | null;
+  priority: 'normal' | 'high' | 'urgent';
+
+  // إعدادات المكالمة
+  settings: {
+    enableChat: boolean;
+    enableScreenShare: boolean;
+    enableRecording: boolean;
+    maxParticipants: number;
+    autoAccept: boolean;
+  };
+
+  // معلومات المكالمة
+  startedAt?: any;
+  endedAt?: any;
+  duration?: number;
+  endReason?: 'completed' | 'cancelled' | 'rejected' | 'timeout' | 'error';
 }
 
-export class AgoraCallSystem {
+// للتوافق مع الكود الحالي
+export interface AgoraCallRequest extends UnifiedCallRequest {}
+
+export class UnifiedAgoraCallSystem {
   private userId: string;
   private userType: 'student' | 'teacher';
   private appId: string;
+  private eventListeners: Map<string, Function[]> = new Map();
 
   constructor(userId: string, userType: 'student' | 'teacher') {
-    console.log('🔧 AgoraCallSystem constructor called with:', { userId, userType });
+    console.log('🚀 Unified Agora System constructor called with:', { userId, userType });
 
     // التحقق من userId وإصلاحه إذا كان فارغاً
     if (!userId || userId.trim() === '') {
-      console.warn('⚠️ AgoraCallSystem: userId is empty, trying Firebase Auth fallback');
+      console.warn('⚠️ Unified Agora: userId is empty, trying Firebase Auth fallback');
       const currentUser = auth.currentUser;
       if (currentUser) {
         console.log('✅ Using Firebase Auth UID as fallback:', currentUser.uid);
         this.userId = currentUser.uid;
       } else {
         console.error('❌ No Firebase Auth user available');
-        throw new Error(`AgoraCallSystem: userId cannot be empty and no Firebase Auth user available. Received: "${userId}"`);
+        throw new Error(`Unified Agora: userId cannot be empty and no Firebase Auth user available. Received: "${userId}"`);
       }
     } else {
       this.userId = userId;
@@ -47,7 +78,7 @@ export class AgoraCallSystem {
     this.userType = userType;
     this.appId = process.env.NEXT_PUBLIC_AGORA_APP_ID || '';
 
-    console.log('✅ AgoraCallSystem initialized:', {
+    console.log('🚀 Unified Agora System initialized:', {
       userId: this.userId,
       userType: this.userType,
       appId: this.appId ? 'configured' : 'missing'
@@ -71,54 +102,119 @@ export class AgoraCallSystem {
     }
   }
 
-  // إرسال طلب مكالمة
-  async sendCallRequest(
+  // 📞 إرسال مكالمة بنمط WhatsApp (مباشرة)
+  async startWhatsAppCall(
     receiverId: string,
     receiverName: string,
-    senderName: string,
+    callType: 'audio' | 'video' = 'video',
+    receiverAvatar: string | null = null
+  ): Promise<string> {
+    return this.sendUnifiedCallRequest(receiverId, receiverName, callType, {
+      callStyle: 'whatsapp',
+      isDirectCall: true,
+      priority: 'high',
+      callerAvatar: auth.currentUser?.photoURL || null,
+      receiverAvatar,
+      settings: {
+        enableChat: false,
+        enableScreenShare: false,
+        enableRecording: false,
+        maxParticipants: 2,
+        autoAccept: false
+      }
+    });
+  }
+
+  // 📞 إرسال مكالمة بسيطة
+  async startSimpleCall(
+    receiverId: string,
+    receiverName: string,
     callType: 'audio' | 'video' = 'video'
+  ): Promise<string> {
+    return this.sendUnifiedCallRequest(receiverId, receiverName, callType, {
+      callStyle: 'simple',
+      isDirectCall: false,
+      priority: 'normal',
+      settings: {
+        enableChat: true,
+        enableScreenShare: true,
+        enableRecording: false,
+        maxParticipants: 2,
+        autoAccept: false
+      }
+    });
+  }
+
+  // 📞 إرسال مكالمة احترافية
+  async startProfessionalCall(
+    receiverId: string,
+    receiverName: string,
+    callType: 'audio' | 'video' = 'video'
+  ): Promise<string> {
+    return this.sendUnifiedCallRequest(receiverId, receiverName, callType, {
+      callStyle: 'professional',
+      isDirectCall: false,
+      priority: 'normal',
+      settings: {
+        enableChat: true,
+        enableScreenShare: true,
+        enableRecording: true,
+        maxParticipants: 10,
+        autoAccept: false
+      }
+    });
+  }
+
+  // 🔧 دالة موحدة لإرسال طلبات المكالمات
+  private async sendUnifiedCallRequest(
+    receiverId: string,
+    receiverName: string,
+    callType: 'audio' | 'video',
+    options: {
+      callStyle: 'whatsapp' | 'simple' | 'professional';
+      isDirectCall: boolean;
+      priority: 'normal' | 'high' | 'urgent';
+      callerAvatar?: string | null;
+      receiverAvatar?: string | null;
+      settings: UnifiedCallRequest['settings'];
+    }
   ): Promise<string> {
     try {
       const channelName = this.generateChannelName();
-      
-      // حفظ طلب المكالمة في Firebase مع تحديد صحيح للمعلم والطالب
+      const user = auth.currentUser;
+      const senderName = user?.displayName || user?.email || 'مستخدم';
+
+      // تحديد معلومات المكالمة
       let studentId, studentName, teacherId, teacherName;
 
-      console.log('🔍 Call system details before assignment:', {
+      console.log('🔍 Unified call details:', {
         userType: this.userType,
         userId: this.userId,
-        receiverId: receiverId,
-        senderName: senderName,
-        receiverName: receiverName
+        receiverId,
+        senderName,
+        receiverName,
+        callStyle: options.callStyle
       });
 
       if (this.userType === 'student') {
-        // الطالب يتصل بالمعلم
         studentId = this.userId;
         studentName = senderName;
         teacherId = receiverId;
         teacherName = receiverName;
       } else {
-        // المعلم يتصل بالطالب
         studentId = receiverId;
         studentName = receiverName;
         teacherId = this.userId;
         teacherName = senderName;
       }
 
-      console.log('✅ Final call assignment:', {
-        studentId,
-        studentName,
-        teacherId,
-        teacherName
-      });
-
       // التحقق من أن جميع القيم المطلوبة موجودة
       if (!studentId || !teacherId) {
         throw new Error(`Missing required IDs: studentId=${studentId}, teacherId=${teacherId}`);
       }
 
-      const callRequest: Omit<AgoraCallRequest, 'id'> = {
+      // إنشاء طلب مكالمة موحد
+      const callRequest: Omit<UnifiedCallRequest, 'id'> = {
         studentId,
         studentName,
         teacherId,
@@ -126,31 +222,37 @@ export class AgoraCallSystem {
         channelName,
         status: 'pending',
         createdAt: serverTimestamp(),
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // ينتهي خلال 5 دقائق (زيادة الوقت)
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
         callType,
-        // إضافة معلومات إضافية للتتبع
+
+        // معلومات المرسل والمستقبل
         senderId: this.userId,
-        senderName: senderName,
-        senderType: this.userType
+        senderName,
+        senderType: this.userType,
+        receiverId,
+        receiverName,
+
+        // إعدادات المكالمة الموحدة
+        callStyle: options.callStyle,
+        isDirectCall: options.isDirectCall,
+        priority: options.priority,
+        callerAvatar: options.callerAvatar,
+        receiverAvatar: options.receiverAvatar,
+        settings: options.settings
       };
 
       const docRef = await addDoc(collection(db, 'agora_call_requests'), callRequest);
 
-      console.log('📞 Agora call request sent:', {
+      console.log(`🚀 ${options.callStyle.toUpperCase()} call request sent:`, {
         id: docRef.id,
         channelName,
         from: senderName,
         to: receiverName,
         type: callType,
-        senderType: this.userType,
-        callRequest: {
-          studentId: callRequest.studentId,
-          studentName: callRequest.studentName,
-          teacherId: callRequest.teacherId,
-          teacherName: callRequest.teacherName,
-          senderId: callRequest.senderId,
-          senderType: callRequest.senderType
-        }
+        style: options.callStyle,
+        isDirect: options.isDirectCall,
+        priority: options.priority,
+        settings: options.settings
       });
 
       console.log('🎯 Call routing details:', {
@@ -166,6 +268,16 @@ export class AgoraCallSystem {
       console.error('Error sending call request:', error);
       throw error;
     }
+  }
+
+  // 🔄 دالة للتوافق مع الكود الحالي - إرسال طلب مكالمة عادي
+  async sendCallRequest(
+    receiverId: string,
+    receiverName: string,
+    senderName: string,
+    callType: 'audio' | 'video' = 'video'
+  ): Promise<string> {
+    return this.startSimpleCall(receiverId, receiverName, callType);
   }
 
   // قبول طلب المكالمة
@@ -313,10 +425,7 @@ export class AgoraCallSystem {
   }
 }
 
-// دالة مساعدة لإنشاء نظام المكالمات
-export function createAgoraCallSystem(userId: string, userType: 'student' | 'teacher'): AgoraCallSystem {
-  return new AgoraCallSystem(userId, userType);
-}
+
 
 // معلومات الخدمة
 export const AGORA_SERVICE_INFO = {
@@ -351,3 +460,21 @@ export const AGORA_SERVICE_INFO = {
     'أوقيانوسيا'
   ]
 };
+
+// 🚀 دوال إنشاء النظام الموحد
+export function createUnifiedAgoraCallSystem(userId: string, userType: 'student' | 'teacher'): UnifiedAgoraCallSystem {
+  return new UnifiedAgoraCallSystem(userId, userType);
+}
+
+// للتوافق مع الكود الحالي
+export function createAgoraCallSystem(userId: string, userType: 'student' | 'teacher'): UnifiedAgoraCallSystem {
+  return new UnifiedAgoraCallSystem(userId, userType);
+}
+
+// تصدير الكلاس القديم للتوافق
+export class AgoraCallSystem extends UnifiedAgoraCallSystem {
+  constructor(userId: string, userType: 'student' | 'teacher') {
+    super(userId, userType);
+    console.log('⚠️ Using legacy AgoraCallSystem - consider upgrading to UnifiedAgoraCallSystem');
+  }
+}

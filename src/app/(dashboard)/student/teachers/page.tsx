@@ -13,13 +13,11 @@ import { useUserData, UserData } from '@/hooks/useUser';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import AgoraCallManager, { useAgoraCallSystem } from '@/components/DailyCallManager';
+import UnifiedCallNotification from '@/components/DailyCallNotification';
+import AgoraVideoCall from '@/components/AgoraVideoCall';
 
 import CallDebugButton from '@/components/CallDebugButton';
-import { useSimpleCall } from '@/hooks/useSimpleCall';
-import SimpleCallNotification from '@/components/SimpleCallNotification';
-import { useWhatsAppCall } from '@/hooks/useWhatsAppCall';
-import WhatsAppCallNotification from '@/components/WhatsAppCallNotification';
-import WhatsAppCallScreen from '@/components/WhatsAppCallScreen';
+import { useUnifiedCall } from '@/hooks/useUnifiedCall';
 
 interface User extends UserData {
     uid: string;
@@ -58,27 +56,28 @@ export default function TeachersPage() {
         student: student
     });
 
-    const { startCall: startAgoraCall, cancelCall, waitingCallId, callSystem } = useAgoraCallSystem(
-        student?.id || '',
-        studentName,
-        'student'
-    );
-
-    // النظام البسيط للمكالمات (احتياطي)
-    const { incomingCalls: simpleIncomingCalls, makeCall: makeSimpleCall } = useSimpleCall();
-
-    // نظام WhatsApp Call الجديد - مكالمات فردية مثل WhatsApp
+    // 🚀 النظام الموحد للمكالمات - يحل محل جميع الأنظمة الأخرى
     const {
-        startCall,
-        incomingCalls: whatsappIncomingCalls,
-        acceptCall: acceptWhatsAppCall,
-        rejectCall: rejectWhatsAppCall,
+        startWhatsAppCall,
+        startSimpleCall,
+        startProfessionalCall,
+        acceptCall,
+        rejectCall,
+        endCall,
+        incomingCalls,
         currentCall,
         isInCall,
         isLoading: isCallLoading,
         callStatus,
-        endCall
-    } = useWhatsAppCall();
+        callSystem
+    } = useUnifiedCall();
+
+    // نظام احتياطي للتوافق
+    const { startCall: startAgoraCall, cancelCall, waitingCallId } = useAgoraCallSystem(
+        student?.id || '',
+        studentName,
+        'student'
+    );
 
     // حالة الانتظار خاصة بكل معلم
     const [waitingForTeacher, setWaitingForTeacher] = useState<string | null>(null);
@@ -191,12 +190,11 @@ export default function TeachersPage() {
                 callType: 'video'
             });
 
-            const callId = await startAgoraCall(teacher.uid, teacher.name, 'video');
-
-            console.log('📞 Call request sent with ID:', callId);
+            // استخدام النظام الموحد - مكالمة احترافية
+            await startProfessionalCall(teacher.uid, teacher.name, 'video');
 
             toast({
-                title: "تم إرسال طلب المكالمة",
+                title: "تم إرسال طلب المكالمة الاحترافية",
                 description: `جاري انتظار رد ${teacher.name}...`,
                 className: "bg-blue-600 text-white"
             });
@@ -204,6 +202,54 @@ export default function TeachersPage() {
             console.error('❌ Error starting call:', error);
             setWaitingForTeacher(null); // إزالة حالة الانتظار عند الخطأ
             setCurrentTeacherCall(null);
+            toast({
+                title: "خطأ",
+                description: "حدث خطأ أثناء إرسال طلب المكالمة",
+                variant: "destructive"
+            });
+        }
+    };
+
+    // دالة مكالمة سريعة (WhatsApp style)
+    const handleQuickCall = async (teacher: User) => {
+        if (!student) return;
+
+        try {
+            setWaitingForTeacher(teacher.uid);
+            await startWhatsAppCall(teacher.uid, teacher.name, 'video', teacher.avatarUrl);
+
+            toast({
+                title: "مكالمة سريعة",
+                description: `جاري الاتصال مع ${teacher.name}...`,
+                className: "bg-green-600 text-white"
+            });
+        } catch (error) {
+            console.error('❌ Error starting quick call:', error);
+            setWaitingForTeacher(null);
+            toast({
+                title: "خطأ",
+                description: "حدث خطأ أثناء بدء المكالمة السريعة",
+                variant: "destructive"
+            });
+        }
+    };
+
+    // دالة مكالمة بسيطة
+    const handleSimpleCall = async (teacher: User) => {
+        if (!student) return;
+
+        try {
+            setWaitingForTeacher(teacher.uid);
+            await startSimpleCall(teacher.uid, teacher.name, 'video');
+
+            toast({
+                title: "طلب مكالمة",
+                description: `تم إرسال طلب مكالمة إلى ${teacher.name}`,
+                className: "bg-blue-600 text-white"
+            });
+        } catch (error) {
+            console.error('❌ Error starting simple call:', error);
+            setWaitingForTeacher(null);
             toast({
                 title: "خطأ",
                 description: "حدث خطأ أثناء إرسال طلب المكالمة",
@@ -344,34 +390,34 @@ export default function TeachersPage() {
                                     </div>
                                     
                                     <div className="flex flex-col gap-2">
+                                        {/* 🚀 مكالمة سريعة (WhatsApp Style) */}
                                         <Button
-                                            onClick={() => handleStartCall(teacher)}
-                                            disabled={!canMakeCalls() || waitingForTeacher === teacher.uid}
-                                            className="bg-green-600 hover:bg-green-700 text-white"
+                                            onClick={() => handleQuickCall(teacher)}
+                                            disabled={!teacher.isOnline || isCallLoading || isInCall || waitingForTeacher === teacher.uid}
+                                            className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
                                         >
                                             <Video className="h-4 w-4 mr-2" />
-                                            {waitingForTeacher === teacher.uid ? 'جاري الاتصال...' : 'بدء مكالمة (قديم)'}
+                                            {waitingForTeacher === teacher.uid ? 'جاري الاتصال...' : 'مكالمة سريعة'}
                                         </Button>
 
-                                        {/* مكالمة فيديو WhatsApp Style */}
+                                        {/* 📞 مكالمة احترافية */}
                                         <Button
-                                            onClick={async () => {
-                                                try {
-                                                    console.log('📹 Starting WhatsApp video call...');
-                                                    await startCall(
-                                                        teacher.uid,
-                                                        teacher.name,
-                                                        'video',
-                                                        (teacher as any).avatar || (teacher as any).photoURL || null
-                                                    );
-                                                } catch (error) {
-                                                    console.error('❌ Error starting video call:', error);
-                                                }
-                                            }}
-                                            disabled={!teacher.isOnline || isCallLoading || isInCall}
+                                            onClick={() => handleStartCall(teacher)}
+                                            disabled={!canMakeCalls() || waitingForTeacher === teacher.uid || isCallLoading}
                                             className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
                                         >
                                             <Video className="h-4 w-4 mr-2" />
+                                            مكالمة احترافية
+                                        </Button>
+
+                                        {/* 📱 مكالمة بسيطة */}
+                                        <Button
+                                            onClick={() => handleSimpleCall(teacher)}
+                                            disabled={!canMakeCalls() || waitingForTeacher === teacher.uid || isCallLoading}
+                                            variant="outline"
+                                            className="border-gray-300 hover:bg-gray-50"
+                                        >
+                                            <Mic className="h-4 w-4 mr-2" />
                                             {isCallLoading ? 'جاري الاتصال...' : 'مكالمة فيديو 📹'}
                                         </Button>
 
@@ -380,7 +426,7 @@ export default function TeachersPage() {
                                             onClick={async () => {
                                                 try {
                                                     console.log('🎙️ Starting WhatsApp audio call...');
-                                                    await startCall(
+                                                    await startWhatsAppCall(
                                                         teacher.uid,
                                                         teacher.name,
                                                         'audio',
@@ -428,23 +474,30 @@ export default function TeachersPage() {
 
 
 
-            {/* إشعارات المكالمات الواردة (WhatsApp Style) */}
-            {whatsappIncomingCalls.map((call) => (
-                <WhatsAppCallNotification
+            {/* 🚀 إشعارات المكالمات الموحدة */}
+            {incomingCalls.map((call) => (
+                <UnifiedCallNotification
                     key={call.id}
-                    call={call}
-                    onAccept={() => acceptWhatsAppCall(call)}
-                    onReject={() => rejectWhatsAppCall(call.id)}
+                    callRequest={call}
+                    onAccept={() => acceptCall(call)}
+                    onReject={() => rejectCall(call.id)}
                 />
             ))}
 
-            {/* واجهة المكالمة النشطة (WhatsApp Style) */}
+
+
+            {/* واجهة المكالمة النشطة */}
             {isInCall && currentCall && (
-                <WhatsAppCallScreen
-                    call={currentCall}
-                    onEndCall={endCall}
-                    isConnected={callStatus === 'connected'}
-                />
+                <div className="fixed inset-0 bg-black z-50">
+                    <AgoraVideoCall
+                        channelName={currentCall.channelName}
+                        token={currentCall.token}
+                        userName={student?.name || 'طالب'}
+                        userType="student"
+                        onCallEnd={endCall}
+                        remoteUserName={currentCall.senderName}
+                    />
+                </div>
             )}
 
             {/* زر تشخيص المكالمات */}

@@ -1,24 +1,24 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { createAgoraCallSystem, AgoraCallRequest } from '@/lib/agoraCallSystem';
-import AgoraCallNotification from './DailyCallNotification';
+import { createUnifiedAgoraCallSystem, UnifiedCallRequest } from '@/lib/agoraCallSystem';
+import UnifiedCallNotification from './DailyCallNotification';
 import AgoraVideoCall from './AgoraVideoCall';
 import { useToast } from '@/hooks/use-toast';
 
-interface AgoraCallManagerProps {
+interface UnifiedCallManagerProps {
   userId: string;
   userName: string;
   userType: 'student' | 'teacher';
 }
 
-export default function AgoraCallManager({
+export default function UnifiedCallManager({
   userId,
   userName,
   userType
-}: AgoraCallManagerProps) {
-  const [callSystem] = useState(() => createAgoraCallSystem(userId, userType));
-  const [incomingCall, setIncomingCall] = useState<AgoraCallRequest | null>(null);
+}: UnifiedCallManagerProps) {
+  const [callSystem] = useState(() => createUnifiedAgoraCallSystem(userId, userType));
+  const [incomingCall, setIncomingCall] = useState<UnifiedCallRequest | null>(null);
   const [activeCall, setActiveCall] = useState<{
     channelName: string;
     token?: string;
@@ -45,12 +45,14 @@ export default function AgoraCallManager({
 
     try {
       unsubscribe = callSystem.listenForIncomingCalls((requests) => {
-        console.log(`📞 Incoming calls for ${userType} (${userId}):`, {
+        console.log(`🚀 Unified calls for ${userType} (${userId}):`, {
           count: requests.length,
           calls: requests.map(r => ({
             id: r.id,
-            from: userType === 'teacher' ? r.studentName : r.teacherName,
+            from: r.senderName,
+            to: r.receiverName,
             type: r.callType,
+            style: r.callStyle,
             status: r.status
           }))
         });
@@ -58,11 +60,14 @@ export default function AgoraCallManager({
         if (requests.length > 0) {
           const latestCall = requests[0];
 
-          console.log('🔔 Processing latest call:', {
+          console.log('🔔 Processing unified call:', {
             id: latestCall.id,
-            from: userType === 'teacher' ? latestCall.studentName : latestCall.teacherName,
-            to: userType === 'teacher' ? latestCall.teacherName : latestCall.studentName,
+            from: latestCall.senderName,
+            to: latestCall.receiverName,
             type: latestCall.callType,
+            style: latestCall.callStyle,
+            isDirect: latestCall.isDirectCall,
+            priority: latestCall.priority,
             status: latestCall.status
           });
 
@@ -116,8 +121,8 @@ export default function AgoraCallManager({
       // قبول المكالمة
       const callData = await callSystem.acceptCallRequest(incomingCall.id);
 
-      // بدء المكالمة
-      const remoteUserName = userType === 'teacher' ? incomingCall.studentName : incomingCall.teacherName;
+      // بدء المكالمة الموحدة
+      const remoteUserName = incomingCall.senderName;
       setActiveCall({
         channelName: callData.channelName,
         token: callData.token,
@@ -125,10 +130,14 @@ export default function AgoraCallManager({
       });
 
       setIncomingCall(null);
-      
+
+      // رسالة مخصصة حسب نوع المكالمة
+      const callStyleText = incomingCall.callStyle === 'whatsapp' ? 'سريعة' :
+                           incomingCall.callStyle === 'professional' ? 'احترافية' : 'عادية';
+
       toast({
-        title: "تم قبول المكالمة",
-        description: "جاري الاتصال...",
+        title: `تم قبول المكالمة ال${callStyleText}`,
+        description: `جاري الاتصال مع ${remoteUserName}...`,
         className: "bg-green-600 text-white"
       });
     } catch (error) {
@@ -187,10 +196,10 @@ export default function AgoraCallManager({
     return null;
   }
 
-  // عرض إشعار المكالمة الواردة
+  // عرض إشعار المكالمة الواردة الموحدة
   if (incomingCall) {
     return (
-      <AgoraCallNotification
+      <UnifiedCallNotification
         callRequest={incomingCall}
         onAccept={handleAcceptCall}
         onReject={handleRejectCall}
@@ -203,10 +212,10 @@ export default function AgoraCallManager({
   return null;
 }
 
-// Hook لاستخدام نظام المكالمات
-export function useAgoraCallSystem(userId: string, userName: string, userType: 'student' | 'teacher') {
-  console.log('🔧 Creating AgoraCallSystem with:', { userId, userName, userType });
-  const [callSystem] = useState(() => createAgoraCallSystem(userId, userType));
+// Hook موحد لاستخدام نظام المكالمات
+export function useUnifiedCallSystem(userId: string, userName: string, userType: 'student' | 'teacher') {
+  console.log('🚀 Creating Unified Call System with:', { userId, userName, userType });
+  const [callSystem] = useState(() => createUnifiedAgoraCallSystem(userId, userType));
   const [waitingCallId, setWaitingCallId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -309,4 +318,12 @@ export function useAgoraCallSystem(userId: string, userName: string, userType: '
     waitingCallId,
     callSystem
   };
+}
+
+// للتوافق مع الكود الحالي
+export const AgoraCallManager = UnifiedCallManager;
+export { UnifiedCallManager }; // تصدير صريح
+export function useAgoraCallSystem(userId: string, userName: string, userType: 'student' | 'teacher') {
+  console.log('⚠️ Using legacy useAgoraCallSystem - consider upgrading to useUnifiedCallSystem');
+  return useUnifiedCallSystem(userId, userName, userType);
 }

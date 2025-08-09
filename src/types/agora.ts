@@ -1,6 +1,7 @@
-// أنواع البيانات لنظام المكالمات Agora.io
+// 🚀 أنواع البيانات لنظام المكالمات Agora.io الموحد
 
-export interface AgoraCallRequest {
+// واجهة موحدة لجميع أنواع المكالمات
+export interface UnifiedCallRequest {
   id: string;
   studentId: string;
   studentName: string;
@@ -11,21 +12,44 @@ export interface AgoraCallRequest {
   createdAt: any; // Firebase Timestamp
   expiresAt: any; // Firebase Timestamp or Date
   callType: 'audio' | 'video';
-  
-  // حقول إضافية للتتبع المحسن
-  senderId?: string;
-  senderName?: string;
-  senderType?: 'student' | 'teacher';
-  
+
+  // معلومات المرسل والمستقبل
+  senderId: string;
+  senderName: string;
+  senderType: 'student' | 'teacher';
+  receiverId: string;
+  receiverName: string;
+
+  // أنماط المكالمات المختلفة
+  callStyle: 'whatsapp' | 'simple' | 'professional'; // نمط المكالمة
+  isDirectCall: boolean; // مكالمة مباشرة أم طلب مكالمة
+
+  // معلومات إضافية
+  callerAvatar?: string | null;
+  receiverAvatar?: string | null;
+  priority: 'normal' | 'high' | 'urgent';
+
+  // إعدادات المكالمة
+  settings: {
+    enableChat: boolean;
+    enableScreenShare: boolean;
+    enableRecording: boolean;
+    maxParticipants: number;
+    autoAccept: boolean;
+  };
+
   // معلومات المكالمة
   token?: string;
   startedAt?: any; // Firebase Timestamp
   endedAt?: any; // Firebase Timestamp
   duration?: number; // بالثواني
-  
+
   // سبب الانتهاء
   endReason?: 'completed' | 'cancelled' | 'rejected' | 'timeout' | 'error';
 }
+
+// للتوافق مع الكود الحالي
+export interface AgoraCallRequest extends UnifiedCallRequest {}
 
 export interface AgoraCallData {
   channelName: string;

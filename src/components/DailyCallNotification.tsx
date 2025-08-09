@@ -4,27 +4,56 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Phone, PhoneOff, Video, VideoOff, 
-  User, Clock, MessageCircle, X
+import {
+  Phone, PhoneOff, Video, VideoOff,
+  User, Clock, MessageCircle, X, Zap, Users, Star
 } from 'lucide-react';
-import { AgoraCallRequest } from '@/lib/agoraCallSystem';
+import { UnifiedCallRequest } from '@/lib/agoraCallSystem';
 
-interface AgoraCallNotificationProps {
-  callRequest: AgoraCallRequest;
+interface UnifiedCallNotificationProps {
+  callRequest: UnifiedCallRequest;
   onAccept: (channelName: string, token?: string) => void;
   onReject: () => void;
   onIgnore?: () => void;
 }
 
-export default function AgoraCallNotification({
+export default function UnifiedCallNotification({
   callRequest,
   onAccept,
   onReject,
   onIgnore
-}: AgoraCallNotificationProps) {
+}: UnifiedCallNotificationProps) {
   const [timeLeft, setTimeLeft] = useState(120); // دقيقتان
   const [isRinging, setIsRinging] = useState(true);
+
+  // تحديد أيقونة ونص المكالمة حسب النوع
+  const getCallStyleInfo = () => {
+    switch (callRequest.callStyle) {
+      case 'whatsapp':
+        return {
+          icon: Zap,
+          title: 'مكالمة سريعة',
+          color: 'bg-green-500',
+          description: 'مكالمة مباشرة'
+        };
+      case 'professional':
+        return {
+          icon: Star,
+          title: 'مكالمة احترافية',
+          color: 'bg-blue-500',
+          description: 'مكالمة مع ميزات متقدمة'
+        };
+      default:
+        return {
+          icon: Users,
+          title: 'مكالمة',
+          color: 'bg-gray-500',
+          description: 'مكالمة عادية'
+        };
+    }
+  };
+
+  const callStyleInfo = getCallStyleInfo();
 
   useEffect(() => {
     // حساب الوقت المتبقي
@@ -96,7 +125,11 @@ export default function AgoraCallNotification({
   };
 
   const getCallerName = () => {
-    return callRequest.studentName || 'طالب';
+    return callRequest.senderName || callRequest.studentName || 'مستخدم';
+  };
+
+  const getCallerAvatar = () => {
+    return callRequest.callerAvatar || null;
   };
 
   const getCallTypeIcon = () => {
@@ -111,30 +144,51 @@ export default function AgoraCallNotification({
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <Card className={`w-full max-w-md bg-gradient-to-br from-green-600 to-green-700 text-white border-0 shadow-2xl transform transition-all duration-300 ${isRinging ? 'scale-105' : 'scale-100'}`}>
+      <Card className={`w-full max-w-md bg-gradient-to-br ${callStyleInfo.color} text-white border-0 shadow-2xl transform transition-all duration-300 ${isRinging ? 'scale-105' : 'scale-100'}`}>
         <CardContent className="p-8 text-center">
-          {/* رمز إسلامي */}
-          <div className="text-4xl mb-4">📞</div>
-          
+          {/* أيقونة نوع المكالمة */}
+          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <callStyleInfo.icon className="h-8 w-8 text-white" />
+          </div>
+
           {/* معلومات المتصل */}
           <div className="mb-6">
             <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <User className="h-12 w-12 text-white" />
+              {getCallerAvatar() ? (
+                <img
+                  src={getCallerAvatar()!}
+                  alt={getCallerName()}
+                  className="w-full h-full rounded-full object-cover"
+                />
+              ) : (
+                <User className="h-12 w-12 text-white" />
+              )}
             </div>
-            
+
             <h2 className="text-2xl font-bold mb-2">{getCallerName()}</h2>
+
+            {/* نوع المكالمة */}
             <Badge variant="secondary" className="bg-white/20 text-white mb-2">
-              طالب تحفيظ القرآن
+              {callStyleInfo.title}
             </Badge>
-            
+
             <div className="flex items-center justify-center gap-2 text-white/90">
               {getCallTypeIcon()}
               <span className="text-lg">{getCallTypeText()}</span>
             </div>
-            
+
             <p className="text-sm text-white/80 mt-2">
-              حصة تحفيظ القرآن الكريم
+              {callStyleInfo.description}
             </p>
+
+            {/* معلومات إضافية للمكالمات الاحترافية */}
+            {callRequest.callStyle === 'professional' && (
+              <div className="mt-3 text-xs text-white/70">
+                <div>• مشاركة الشاشة متاحة</div>
+                <div>• تسجيل المكالمة متاح</div>
+                <div>• دردشة متاحة</div>
+              </div>
+            )}
           </div>
 
           {/* عداد الوقت */}

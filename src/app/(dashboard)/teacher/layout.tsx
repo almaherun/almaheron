@@ -43,10 +43,10 @@ import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import CallDebugButton from '@/components/CallDebugButton';
-import { useWhatsAppCall } from '@/hooks/useWhatsAppCall';
-import WhatsAppCallNotification from '@/components/WhatsAppCallNotification';
-import WhatsAppCallScreen from '@/components/WhatsAppCallScreen';
-import AgoraCallManager from '@/components/DailyCallManager';
+import { UnifiedCallManager } from '@/components/DailyCallManager';
+import { useUnifiedCall } from '@/hooks/useUnifiedCall';
+import UnifiedCallNotification from '@/components/DailyCallNotification';
+import AgoraVideoCall from '@/components/AgoraVideoCall';
 
 
 const menuItems = [
@@ -95,16 +95,18 @@ function TeacherLayoutContent({
   const [theme, setTheme] = React.useState('light');
   const { isMobile, setOpenMobile } = useSidebar();
 
-  // نظام WhatsApp Call للمكالمات - مكالمات فردية
+  // 🚀 النظام الموحد للمكالمات
   const {
-    incomingCalls,
-    acceptCall,
-    rejectCall,
-    currentCall,
-    isInCall,
-    callStatus,
-    endCall
-  } = useWhatsAppCall();
+    incomingCalls: unifiedIncomingCalls,
+    acceptCall: acceptUnifiedCall,
+    rejectCall: rejectUnifiedCall,
+    currentCall: unifiedCurrentCall,
+    isInCall: isInUnifiedCall,
+    callStatus: unifiedCallStatus,
+    endCall: endUnifiedCall
+  } = useUnifiedCall();
+
+
   
   React.useEffect(() => {
     if (!loading && (!userData || userData.type !== 'teacher')) {
@@ -276,13 +278,12 @@ function TeacherLayoutContent({
             <BottomNavBar items={menuItems} />
         </SidebarInset>
 
-        {/* نظام المكالمات الجديد - تم إعادة التفعيل */}
+        {/* 🚀 النظام الموحد للمكالمات */}
         {userData && (() => {
-          // استخدام Firebase Auth UID مباشرة للتطابق مع الطالب
           const currentUser = auth.currentUser;
           const teacherId = currentUser?.uid || userData?.id || '';
 
-          console.log('🎓 Teacher call system setup:', {
+          console.log('🚀 Unified Teacher call system setup:', {
             teacherId,
             teacherName: userData?.name,
             authUid: currentUser?.uid,
@@ -291,7 +292,7 @@ function TeacherLayoutContent({
           });
 
           return (
-            <AgoraCallManager
+            <UnifiedCallManager
               userId={teacherId}
               userName={userData?.name || 'معلم'}
               userType="teacher"
@@ -299,24 +300,31 @@ function TeacherLayoutContent({
           );
         })()}
 
-        {/* إشعارات المكالمات الواردة (WhatsApp Style) */}
-        {incomingCalls.map((call) => (
-            <WhatsAppCallNotification
+        {/* 🚀 إشعارات المكالمات الموحدة */}
+        {unifiedIncomingCalls.map((call) => (
+            <UnifiedCallNotification
                 key={call.id}
-                call={call}
-                onAccept={() => acceptCall(call)}
-                onReject={() => rejectCall(call.id)}
+                callRequest={call}
+                onAccept={() => acceptUnifiedCall(call)}
+                onReject={() => rejectUnifiedCall(call.id)}
             />
         ))}
 
-        {/* واجهة المكالمة النشطة (WhatsApp Style) */}
-        {isInCall && currentCall && (
-            <WhatsAppCallScreen
-                call={currentCall}
-                onEndCall={endCall}
-                isConnected={callStatus === 'connected'}
-            />
+        {/* واجهة المكالمة النشطة الموحدة */}
+        {isInUnifiedCall && unifiedCurrentCall && (
+            <div className="fixed inset-0 bg-black z-50">
+                <AgoraVideoCall
+                    channelName={unifiedCurrentCall.channelName}
+                    token={unifiedCurrentCall.token}
+                    userName={userData?.name || 'معلم'}
+                    userType="teacher"
+                    onCallEnd={endUnifiedCall}
+                    remoteUserName={unifiedCurrentCall.senderName}
+                />
+            </div>
         )}
+
+
 
         {/* زر تشخيص المكالمات */}
         <CallDebugButton />
