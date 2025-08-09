@@ -150,7 +150,14 @@ export class DirectWebRTCCall {
       };
 
       await setDoc(doc(db, 'webrtc_calls', this.callId), callOffer);
-      console.log('✅ Call offer sent to Firebase:', callOffer);
+      console.log('✅ Call offer sent to Firebase:', {
+        callId: this.callId,
+        studentId: callOffer.studentId,
+        teacherId: callOffer.teacherId,
+        studentName: callOffer.studentName,
+        teacherName: callOffer.teacherName,
+        status: callOffer.status
+      });
 
       // الاستماع للـ answer
       this.listenForAnswer();

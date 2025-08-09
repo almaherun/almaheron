@@ -154,15 +154,24 @@ export default function TeacherProfilePage() {
                 </CardHeader>
                 <CardContent>
                     {student && teacher && (
-                        <ProfessionalVideoCall
-                            userId={student.id}
-                            userType="student"
-                            userName={student.name}
-                            targetTeacherId={teacher.uid}
-                            targetTeacherName={teacher.name}
-                            targetTeacherImage={teacher.avatarUrl}
-                            currentSurah="سورة البقرة"
-                        />
+                        <>
+                            {/* تشخيص بيانات المعلم */}
+                            {console.log('🎯 Teacher data for call:', {
+                                teacherId: teacher.uid,
+                                teacherName: teacher.name,
+                                fullTeacherData: teacher
+                            })}
+
+                            <ProfessionalVideoCall
+                                userId={student.id}
+                                userType="student"
+                                userName={student.name}
+                                targetTeacherId={teacher.uid}
+                                targetTeacherName={teacher.name}
+                                targetTeacherImage={teacher.avatarUrl}
+                                currentSurah="سورة البقرة"
+                            />
+                        </>
                     )}
                 </CardContent>
             </Card>

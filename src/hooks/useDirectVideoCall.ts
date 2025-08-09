@@ -76,7 +76,14 @@ export function useDirectVideoCall(userId: string, userType: 'student' | 'teache
 
     const unsubscribe = onSnapshot(callsQuery, (snapshot) => {
       const calls: CallOffer[] = [];
-      
+      const allCalls: CallOffer[] = [];
+
+      console.log('🔍 Firebase snapshot received:', {
+        size: snapshot.size,
+        empty: snapshot.empty,
+        teacherUserId: userId
+      });
+
       snapshot.forEach((doc) => {
         const data = doc.data() as CallOffer;
 
@@ -86,6 +93,9 @@ export function useDirectVideoCall(userId: string, userType: 'student' | 'teache
           id: doc.id
         } as CallOffer;
 
+        // إضافة جميع المكالمات للتشخيص
+        allCalls.push(call);
+
         // فلترة المكالمات للمعلم الحالي
         let isForMe = false;
 
@@ -93,7 +103,8 @@ export function useDirectVideoCall(userId: string, userType: 'student' | 'teache
           // للمعلم: تحقق من معرف المعلم أو اسم المعلم
           isForMe = data.teacherId === userId ||
                    data.teacherName === userId ||
-                   (userId === 'qGO5FqM2NaacFBKRdTcVA9zYppm1' && data.teacherName === 'tech');
+                   (userId === 'qGO5FqM2NaacFBKRdTcVA9zYppm1' && data.teacherName === 'tech') ||
+                   (userId === 'qGO5FqM2NaacFBKRdTcVA9zYppm1' && data.teacherId === 'tech');
         } else {
           // للطالب: تحقق من معرف الطالب
           isForMe = data.studentId === userId;
@@ -111,11 +122,29 @@ export function useDirectVideoCall(userId: string, userType: 'student' | 'teache
           status: data.status,
           isForMe: isForMe,
           myUserId: userId,
-          userType: userType
+          userType: userType,
+          matchConditions: {
+            teacherIdMatch: data.teacherId === userId,
+            teacherNameMatch: data.teacherName === userId,
+            specialTechMatch: userId === 'qGO5FqM2NaacFBKRdTcVA9zYppm1' && data.teacherName === 'tech',
+            specialTechIdMatch: userId === 'qGO5FqM2NaacFBKRdTcVA9zYppm1' && data.teacherId === 'tech'
+          }
         });
       });
 
-      console.log('📞 Incoming calls updated:', calls.length, 'for user:', userId);
+      console.log('📞 Incoming calls updated:', {
+        totalCallsInDB: allCalls.length,
+        callsForMe: calls.length,
+        myUserId: userId,
+        userType: userType,
+        allCallsData: allCalls.map(c => ({
+          id: c.id,
+          studentId: c.studentId,
+          teacherId: c.teacherId,
+          teacherName: c.teacherName,
+          status: c.status
+        }))
+      });
       
       setCallState(prev => ({ ...prev, incomingCalls: calls }));
 
