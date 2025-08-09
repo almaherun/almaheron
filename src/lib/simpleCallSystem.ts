@@ -58,14 +58,48 @@ export class SimpleCallSystem {
         collection: 'simple_calls'
       });
 
-      const docRef = await addDoc(collection(db, 'simple_calls'), callRequest);
+      // محاولة حفظ المكالمة مع إعادة المحاولة
+      let docRef;
+      let attempts = 0;
+      const maxAttempts = 3;
+
+      while (attempts < maxAttempts) {
+        try {
+          docRef = await addDoc(collection(db, 'simple_calls'), callRequest);
+          break;
+        } catch (error) {
+          attempts++;
+          console.error(`❌ Attempt ${attempts} failed:`, error);
+          if (attempts >= maxAttempts) {
+            throw error;
+          }
+          // انتظار قبل إعادة المحاولة
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+        }
+      }
 
       console.log('✅ Call request saved to Firestore:', {
         id: docRef.id,
         from: callRequest.studentName,
         to: callRequest.teacherName,
-        channel: channelName
+        channel: channelName,
+        attempts: attempts
       });
+
+      // تحقق من الحفظ
+      setTimeout(async () => {
+        try {
+          const savedDoc = await import('firebase/firestore').then(({ getDoc, doc }) =>
+            getDoc(doc(db, 'simple_calls', docRef.id))
+          );
+          console.log('🔍 Verification - Call saved:', {
+            exists: savedDoc.exists(),
+            data: savedDoc.exists() ? savedDoc.data() : null
+          });
+        } catch (error) {
+          console.error('❌ Verification failed:', error);
+        }
+      }, 1000);
 
       return docRef.id;
     } catch (error) {
@@ -132,70 +166,19 @@ export class SimpleCallSystem {
     }
   }
 
-  // الاستماع للمكالمات الواردة
+  // الاستماع للمكالمات الواردة - نسخة مبسطة لتجنب أخطاء QUIC
   listenForIncomingCalls(callback: (calls: SimpleCallRequest[]) => void): () => void {
     try {
-      const fieldToQuery = this.userType === 'teacher' ? 'teacherId' : 'studentId';
-
-      console.log('🎧 Setting up call listener:', {
+      console.log('🎧 Setting up simplified call listener:', {
         userType: this.userType,
-        userId: this.userId,
-        field: fieldToQuery,
-        collection: 'simple_calls'
+        userId: this.userId
       });
 
-      // استعلام تجريبي لفحص جميع المكالمات المعلقة
-      const testQuery = query(
-        collection(db, 'simple_calls'),
-        where('status', '==', 'pending')
-      );
-
-      onSnapshot(testQuery, (testSnapshot) => {
-        console.log('🧪 All pending calls in database:', {
-          total: testSnapshot.size,
-          myUserId: this.userId,
-          myUserType: this.userType,
-          calls: testSnapshot.docs.map(doc => ({
-            id: doc.id,
-            studentId: doc.data().studentId,
-            teacherId: doc.data().teacherId,
-            studentName: doc.data().studentName,
-            teacherName: doc.data().teacherName,
-            status: doc.data().status,
-            isForMe: doc.data().teacherId === this.userId || doc.data().studentId === this.userId
-          }))
-        });
-      }, { includeMetadataChanges: false });
-
+      // استعلام مبسط جداً - فقط المكالمات المعلقة
       const q = query(
         collection(db, 'simple_calls'),
-        where(fieldToQuery, '==', this.userId),
         where('status', '==', 'pending')
       );
-
-      // للمعلمين: جرب أيضاً استعلام بدون فلترة المعرف لنرى جميع المكالمات
-      if (this.userType === 'teacher') {
-        const allCallsQuery = query(
-          collection(db, 'simple_calls'),
-          where('status', '==', 'pending')
-        );
-
-        onSnapshot(allCallsQuery, (allSnapshot) => {
-          console.log('🔍 All calls for teacher debugging:', {
-            teacherId: this.userId,
-            totalCalls: allSnapshot.size,
-            callsForMe: allSnapshot.docs.filter(doc => doc.data().teacherId === this.userId).length,
-            allCalls: allSnapshot.docs.map(doc => ({
-              id: doc.id,
-              teacherId: doc.data().teacherId,
-              studentId: doc.data().studentId,
-              teacherName: doc.data().teacherName,
-              studentName: doc.data().studentName,
-              isForMe: doc.data().teacherId === this.userId
-            }))
-          });
-        });
-      }
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
         console.log('🔍 Firestore snapshot received:', {
@@ -205,40 +188,58 @@ export class SimpleCallSystem {
           userId: this.userId
         });
 
-        const calls: SimpleCallRequest[] = [];
+        const allCalls: SimpleCallRequest[] = [];
+        const myCalls: SimpleCallRequest[] = [];
 
         snapshot.forEach((doc) => {
           const data = doc.data();
+          const call = {
+            id: doc.id,
+            ...data
+          } as SimpleCallRequest;
+
+          allCalls.push(call);
+
+          // فلترة المكالمات الخاصة بي يدوياً
+          const isForMe = this.userType === 'teacher'
+            ? data.teacherId === this.userId
+            : data.studentId === this.userId;
+
+          if (isForMe) {
+            myCalls.push(call);
+          }
+
           console.log('📄 Call document:', {
             id: doc.id,
             studentId: data.studentId,
             teacherId: data.teacherId,
             status: data.status,
             studentName: data.studentName,
-            teacherName: data.teacherName
+            teacherName: data.teacherName,
+            isForMe: isForMe
           });
-
-          calls.push({
-            id: doc.id,
-            ...data
-          } as SimpleCallRequest);
         });
 
-        console.log('📞 Processed incoming calls:', {
+        console.log('📞 Call filtering results:', {
           userType: this.userType,
           userId: this.userId,
-          count: calls.length,
-          calls: calls.map(c => ({
+          totalCalls: allCalls.length,
+          myCallsCount: myCalls.length,
+          myCalls: myCalls.map(c => ({
             id: c.id,
             from: c.studentName,
-            to: c.teacherName,
-            status: c.status
+            to: c.teacherName
           }))
         });
 
-        callback(calls);
+        callback(myCalls);
       }, (error) => {
         console.error('❌ Firestore listener error:', error);
+        // جرب مرة أخرى بعد تأخير
+        setTimeout(() => {
+          console.log('🔄 Retrying call listener...');
+          this.listenForIncomingCalls(callback);
+        }, 3000);
         callback([]);
       });
 

@@ -49,7 +49,7 @@ export function useSimpleCall() {
     return () => unsubscribe();
   }, []);
 
-  // الاستماع للمكالمات
+  // الاستماع للمكالمات مع إعادة المحاولة
   useEffect(() => {
     if (!callSystemRef.current) {
       console.log('⚠️ Call system not ready, skipping listener setup');
@@ -58,28 +58,46 @@ export function useSimpleCall() {
 
     console.log('🎧 Setting up call listener in hook...');
 
-    const unsubscribe = callSystemRef.current.listenForIncomingCalls((calls: SimpleCallRequest[]) => {
-      console.log('📞 Hook received calls update:', {
-        count: calls.length,
-        calls: calls.map(c => ({
-          id: c.id,
-          from: c.studentName,
-          to: c.teacherName
-        }))
-      });
+    let retryCount = 0;
+    const maxRetries = 3;
 
-      setIncomingCalls(calls);
+    const setupListener = () => {
+      try {
+        const unsubscribe = callSystemRef.current.listenForIncomingCalls((calls: SimpleCallRequest[]) => {
+          console.log('📞 Hook received calls update:', {
+            count: calls.length,
+            calls: calls.map(c => ({
+              id: c.id,
+              from: c.studentName,
+              to: c.teacherName
+            }))
+          });
 
-      if (calls.length > 0) {
-        const latestCall = calls[0];
-        toast({
-          title: "📞 مكالمة واردة",
-          description: `مكالمة من ${latestCall.studentName}`,
-          duration: 10000,
+          setIncomingCalls(calls);
+
+          if (calls.length > 0) {
+            const latestCall = calls[0];
+            toast({
+              title: "📞 مكالمة واردة",
+              description: `مكالمة من ${latestCall.studentName}`,
+              duration: 10000,
+            });
+          }
         });
-      }
-    });
 
+        return unsubscribe;
+      } catch (error) {
+        console.error('❌ Hook listener error:', error);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.log(`🔄 Retrying listener setup (${retryCount}/${maxRetries})...`);
+          setTimeout(setupListener, 2000 * retryCount);
+        }
+        return () => {};
+      }
+    };
+
+    const unsubscribe = setupListener();
     return unsubscribe;
   }, [toast]);
 
