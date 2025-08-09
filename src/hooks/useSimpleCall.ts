@@ -1,4 +1,4 @@
-// 📞 Hook بسيط للمكالمات
+// 📞 Hook بسيط للمكالمات - نسخة مصلحة
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -43,76 +43,50 @@ export function useSimpleCall() {
       if (user && !callSystemRef.current) {
         console.log('🔄 Auth state changed, initializing...');
         initializeSystem();
-
-        // إعادة تشغيل الاستماع بعد التهيئة
-        setTimeout(() => {
-          console.log('🔄 Restarting listener after auth...');
-          window.location.reload(); // إعادة تحميل لضمان إعداد الاستماع
-        }, 2000);
       }
     });
 
     return () => unsubscribe();
   }, []);
 
-  // الاستماع للمكالمات مع إعادة المحاولة
+  // الاستماع للمكالمات - بسيط ومباشر
   useEffect(() => {
-    // انتظار تهيئة النظام
-    const setupListenerWhenReady = () => {
-      if (!callSystemRef.current) {
-        console.log('⚠️ Call system not ready, retrying in 1 second...');
-        setTimeout(setupListenerWhenReady, 1000);
-        return;
-      }
+    if (!callSystemRef.current) {
+      console.log('⚠️ Call system not ready, skipping listener setup');
+      return;
+    }
 
-      console.log('🎧 Setting up call listener in hook...');
+    console.log('🎧 Setting up call listener...');
 
-    let retryCount = 0;
-    const maxRetries = 3;
-
-    const setupListener = () => {
-      try {
-        const unsubscribe = callSystemRef.current.listenForIncomingCalls((calls: SimpleCallRequest[]) => {
-          console.log('📞 Hook received calls update:', {
-            count: calls.length,
-            calls: calls.map(c => ({
-              id: c.id,
-              from: c.studentName,
-              to: c.teacherName
-            }))
-          });
-
-          setIncomingCalls(calls);
-
-          if (calls.length > 0) {
-            const latestCall = calls[0];
-            toast({
-              title: "📞 مكالمة واردة",
-              description: `مكالمة من ${latestCall.studentName}`,
-              duration: 10000,
-            });
-          }
+    try {
+      const unsubscribe = callSystemRef.current.listenForIncomingCalls((calls: SimpleCallRequest[]) => {
+        console.log('📞 Received calls update:', {
+          count: calls.length,
+          calls: calls.map(c => ({
+            id: c.id,
+            from: c.studentName,
+            to: c.teacherName
+          }))
         });
 
-        return unsubscribe;
-      } catch (error) {
-        console.error('❌ Hook listener error:', error);
-        if (retryCount < maxRetries) {
-          retryCount++;
-          console.log(`🔄 Retrying listener setup (${retryCount}/${maxRetries})...`);
-          setTimeout(setupListener, 2000 * retryCount);
+        setIncomingCalls(calls);
+        
+        if (calls.length > 0) {
+          const latestCall = calls[0];
+          toast({
+            title: "📞 مكالمة واردة",
+            description: `مكالمة من ${latestCall.studentName}`,
+            duration: 10000,
+          });
         }
-        return () => {};
-      }
-    };
+      });
 
-      const unsubscribe = setupListener();
       return unsubscribe;
-    };
-
-    // بدء الإعداد
-    setupListenerWhenReady();
-  }, [toast]);
+    } catch (error) {
+      console.error('❌ Listener error:', error);
+      return () => {};
+    }
+  }, [callSystemRef.current, toast]);
 
   // إرسال مكالمة
   const sendCall = async (teacherId: string, teacherName: string) => {
@@ -120,10 +94,10 @@ export function useSimpleCall() {
 
     setIsLoading(true);
     try {
-      console.log('📞 Hook sending call:', { teacherId, teacherName });
-
+      console.log('📞 Sending call:', { teacherId, teacherName });
+      
       const callId = await callSystemRef.current.sendCallRequest(teacherId, teacherName);
-
+      
       toast({
         title: "📞 تم إرسال طلب المكالمة",
         description: `جاري انتظار رد ${teacherName}...`,
@@ -132,7 +106,7 @@ export function useSimpleCall() {
 
       return callId;
     } catch (error: any) {
-      console.error('❌ Hook send call error:', error);
+      console.error('❌ Send call error:', error);
       toast({
         title: "❌ خطأ",
         description: error.message || "فشل في إرسال طلب المكالمة",
