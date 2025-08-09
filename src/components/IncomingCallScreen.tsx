@@ -26,25 +26,43 @@ export default function IncomingCallScreen({
   const [isRinging, setIsRinging] = useState(true);
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0);
 
   // طلب إذن الكاميرا والميكروفون
   const requestPermissions = async () => {
+    console.log('🔍 Requesting permissions...');
     setIsRequestingPermission(true);
+
     try {
+      console.log('📱 Calling getUserMedia...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true
       });
 
-      // إيقاف المسارات فوراً (نحن نريد الإذن فقط)
-      stream.getTracks().forEach(track => track.stop());
+      console.log('✅ Stream received:', stream);
 
+      // إيقاف المسارات فوراً (نحن نريد الإذن فقط)
+      stream.getTracks().forEach(track => {
+        console.log('🛑 Stopping track:', track.kind);
+        track.stop();
+      });
+
+      console.log('✅ Setting permissionGranted to true');
       setPermissionGranted(true);
+      setForceUpdate(prev => prev + 1); // إجبار إعادة الرسم
       console.log('✅ Camera and microphone permissions granted');
+
+      // إضافة تأكيد بصري
+      setTimeout(() => {
+        alert('✅ تم منح الإذن بنجاح! يمكنك الآن قبول المكالمة.');
+      }, 100);
+
     } catch (error) {
       console.error('❌ Permission denied:', error);
-      alert('يرجى السماح للكاميرا والميكروفون في المتصفح للمتابعة');
+      alert('❌ يرجى السماح للكاميرا والميكروفون في المتصفح للمتابعة');
     } finally {
+      console.log('🔍 Setting isRequestingPermission to false');
       setIsRequestingPermission(false);
     }
   };
@@ -52,6 +70,10 @@ export default function IncomingCallScreen({
   useEffect(() => {
     if (isVisible) {
       setIsRinging(true);
+      // إعادة تعيين حالة الإذن عند ظهور المكالمة الجديدة
+      setPermissionGranted(false);
+      setIsRequestingPermission(false);
+
       // تشغيل صوت الرنين (اختياري)
       const audio = new Audio('/sounds/quran-ringtone.mp3');
       audio.loop = true;
@@ -69,6 +91,23 @@ export default function IncomingCallScreen({
       // تنظيف عند عدم الرؤية
     };
   }, [isVisible]);
+
+  // مراقبة تغيير حالة الإذن
+  useEffect(() => {
+    console.log('🔍 Permission state changed:', {
+      permissionGranted,
+      isRequestingPermission,
+      forceUpdate
+    });
+  }, [permissionGranted, isRequestingPermission, forceUpdate]);
+
+  // تشخيص الحالة
+  console.log('🔍 IncomingCallScreen state:', {
+    isVisible,
+    permissionGranted,
+    isRequestingPermission,
+    callerName
+  });
 
   if (!isVisible) return null;
 
@@ -155,15 +194,15 @@ export default function IncomingCallScreen({
           </div>
         </motion.div>
 
-        {/* Permission Request */}
-        {!permissionGranted && (
-          <motion.div
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-center mb-8"
-          >
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-4">
+        {/* Permission Status */}
+        <motion.div
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="text-center mb-8"
+        >
+          {!permissionGranted ? (
+            <div className="bg-red-500/20 backdrop-blur-sm rounded-xl p-4 mb-4 border border-red-500/30">
               <p className="text-white/90 text-sm mb-3">
                 🎥 يرجى السماح للكاميرا والميكروفون للمتابعة
               </p>
@@ -177,8 +216,17 @@ export default function IncomingCallScreen({
                 {isRequestingPermission ? '⏳ جاري الطلب...' : '🔓 السماح للكاميرا'}
               </motion.button>
             </div>
-          </motion.div>
-        )}
+          ) : (
+            <div className="bg-green-500/20 backdrop-blur-sm rounded-xl p-4 mb-4 border border-green-500/30">
+              <p className="text-white/90 text-sm mb-2">
+                ✅ تم منح الإذن بنجاح!
+              </p>
+              <p className="text-white/70 text-xs">
+                يمكنك الآن قبول المكالمة
+              </p>
+            </div>
+          )}
+        </motion.div>
 
         {/* Call Actions */}
         <motion.div
