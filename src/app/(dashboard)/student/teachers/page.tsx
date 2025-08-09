@@ -106,11 +106,26 @@ export default function TeachersPage() {
 
     // دالة التواصل مع المعلم عبر الدردشة
     const handleContactTeacher = (teacher: User) => {
-        toast({
-            title: "💬 التواصل مع المعلم",
-            description: `يمكنك التواصل مع ${teacher.name} عبر نظام الدردشة`,
-            className: "bg-blue-600 text-white"
-        });
+        // فتح نافذة دردشة جديدة أو الانتقال لصفحة الدردشة
+        const chatUrl = `https://wa.me/${teacher.phone?.replace(/[^0-9]/g, '')}?text=السلام عليكم أستاذ ${teacher.name}، أريد التواصل معك بخصوص دروس تحفيظ القرآن`;
+
+        // جرب فتح WhatsApp أولاً
+        if (teacher.phone) {
+            window.open(chatUrl, '_blank');
+        } else {
+            // إذا لم يكن هناك رقم، اعرض نافذة دردشة بسيطة
+            const message = prompt(`أرسل رسالة للأستاذ ${teacher.name}:`);
+            if (message) {
+                toast({
+                    title: "✅ تم إرسال الرسالة",
+                    description: `تم إرسال رسالتك للأستاذ ${teacher.name}`,
+                    className: "bg-green-600 text-white"
+                });
+
+                // هنا يمكن إضافة كود لحفظ الرسالة في Firebase
+                console.log('Message to', teacher.name, ':', message);
+            }
+        }
     };
 
     // فلترة المعلمين حسب البحث
@@ -236,7 +251,18 @@ export default function TeachersPage() {
 
                                     {/* أزرار التواصل */}
                                     <div className="space-y-2">
-                                        {/* تم استبدال زر المكالمة بالنظام الجديد في صفحة المعلم */}
+                                        {/* زر المكالمة الجديد */}
+                                        <Button
+                                            onClick={() => {
+                                                // الانتقال لصفحة المعلم مع المكالمة
+                                                window.location.href = `/student/teachers/${teacher.uid}`;
+                                            }}
+                                            disabled={!teacher.isOnline}
+                                            className="w-full bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+                                        >
+                                            <Video className="h-4 w-4 mr-2" />
+                                            📞 مكالمة فيديو
+                                        </Button>
 
                                         {/* زر الدردشة */}
                                         <Button

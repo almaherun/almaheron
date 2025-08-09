@@ -151,8 +151,19 @@ export default function ProfessionalVideoCall({
     );
   }
 
+  // تشخيص
+  console.log('🔍 ProfessionalVideoCall Debug:', {
+    userType,
+    targetTeacherId,
+    targetTeacherName,
+    isInCall,
+    isConnecting,
+    error
+  });
+
   // عرض أزرار المكالمة (للطلاب)
   if (userType === 'student' && targetTeacherId && targetTeacherName) {
+    console.log('✅ Showing call buttons for student');
     return (
       <div className="space-y-4">
         {/* زر مكالمة فيديو احترافي */}
@@ -237,5 +248,27 @@ export default function ProfessionalVideoCall({
     );
   }
 
-  return null;
+  // رسالة احتياطية للتشخيص
+  return (
+    <div className="text-center p-8 bg-yellow-50 border border-yellow-200 rounded-xl">
+      <div className="text-4xl mb-4">⚠️</div>
+      <h3 className="text-lg font-semibold text-yellow-800 mb-2">
+        مشكلة في تحميل نظام المكالمات
+      </h3>
+      <div className="text-sm text-yellow-700 space-y-1">
+        <p><strong>نوع المستخدم:</strong> {userType}</p>
+        <p><strong>معرف المعلم:</strong> {targetTeacherId || 'غير محدد'}</p>
+        <p><strong>اسم المعلم:</strong> {targetTeacherName || 'غير محدد'}</p>
+        <p><strong>في مكالمة:</strong> {isInCall ? 'نعم' : 'لا'}</p>
+        <p><strong>يتصل:</strong> {isConnecting ? 'نعم' : 'لا'}</p>
+        {error && <p><strong>خطأ:</strong> {error}</p>}
+      </div>
+      <button
+        onClick={() => window.location.reload()}
+        className="mt-4 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+      >
+        إعادة تحميل الصفحة
+      </button>
+    </div>
+  );
 }
