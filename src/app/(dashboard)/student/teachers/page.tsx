@@ -12,9 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserData, UserData } from '@/hooks/useUser';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useSimpleCall } from '@/hooks/useSimpleCall';
-import SimpleCallNotification from '@/components/SimpleCallNotification';
-import SimpleVideoCall from '@/components/SimpleVideoCall';
+// تم استبدال النظام القديم بنظام WebRTC المباشر الاحترافي
 
 interface User extends UserData {
     uid: string;
@@ -40,20 +38,9 @@ export default function TeachersPage() {
     // معلومات الطالب
     const studentName = student?.name || 'طالب';
 
-    // 📞 نظام المكالمات البسيط
-    const {
-        incomingCalls,
-        isLoading: isCallLoading,
-        currentCall,
-        isInCall,
-        sendCall,
-        acceptCall,
-        rejectCall,
-        endCall
-    } = useSimpleCall();
+    // تم استبدال النظام القديم بنظام WebRTC المباشر الاحترافي
 
-    // حالة منفصلة لكل معلم
-    const [callingTeacher, setCallingTeacher] = useState<string | null>(null);
+    // تم إزالة حالة المكالمة القديمة
 
     // جلب قائمة المعلمين مع تشخيص
     useEffect(() => {
@@ -113,58 +100,9 @@ export default function TeachersPage() {
         return () => unsubscribe();
     }, [student]);
 
-    // دالة بدء المكالمة
-    const handleStartCall = async (teacher: User) => {
-        if (!teacher.isOnline) {
-            toast({
-                title: "❌ المعلم غير متصل",
-                description: "المعلم غير متصل حالياً، جرب لاحقاً",
-                variant: "destructive"
-            });
-            return;
-        }
+    // تم استبدال دالة المكالمة القديمة بنظام WebRTC المباشر الاحترافي
 
-        // تعيين حالة الاتصال لهذا المعلم فقط
-        setCallingTeacher(teacher.uid);
-
-        try {
-            console.log('🚀 Starting call to teacher:', {
-                teacherId: teacher.uid,
-                teacherName: teacher.name,
-                teacherAuthUid: (teacher as any).authUid,
-                teacherDocId: teacher.id,
-                teacherData: teacher
-            });
-
-            // جرب إرسال المكالمة بالمعرف الصحيح
-            const teacherIdToUse = teacher.uid; // Firebase Auth UID
-            console.log('📞 Using teacher ID:', teacherIdToUse);
-
-            await sendCall(teacherIdToUse, teacher.name);
-        } catch (error) {
-            console.error('Error starting call:', error);
-            setCallingTeacher(null); // إزالة حالة الاتصال عند الخطأ
-        }
-    };
-
-    // إزالة حالة الاتصال عند انتهاء المكالمة أو بدء مكالمة جديدة
-    React.useEffect(() => {
-        if (!isCallLoading) {
-            // تأخير قصير لإزالة الحالة
-            const timer = setTimeout(() => {
-                setCallingTeacher(null);
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
-        return undefined;
-    }, [isCallLoading]);
-
-    // إزالة حالة الاتصال عند بدء مكالمة فعلية
-    React.useEffect(() => {
-        if (isInCall) {
-            setCallingTeacher(null);
-        }
-    }, [isInCall]);
+    // تم إزالة المراجع للنظام القديم
 
     // دالة التواصل مع المعلم عبر الدردشة
     const handleContactTeacher = (teacher: User) => {
@@ -298,15 +236,7 @@ export default function TeachersPage() {
 
                                     {/* أزرار التواصل */}
                                     <div className="space-y-2">
-                                        {/* زر المكالمة */}
-                                        <Button
-                                            onClick={() => handleStartCall(teacher)}
-                                            disabled={!teacher.isOnline || callingTeacher === teacher.uid}
-                                            className="w-full bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
-                                        >
-                                            <Video className="h-4 w-4 mr-2" />
-                                            {callingTeacher === teacher.uid ? 'جاري الاتصال...' : '📞 مكالمة فيديو'}
-                                        </Button>
+                                        {/* تم استبدال زر المكالمة بالنظام الجديد في صفحة المعلم */}
 
                                         {/* زر الدردشة */}
                                         <Button
@@ -343,23 +273,7 @@ export default function TeachersPage() {
                 </div>
             )}
 
-            {/* إشعارات المكالمات الواردة */}
-            {incomingCalls.map((call) => (
-                <SimpleCallNotification
-                    key={call.id}
-                    call={call}
-                    onAccept={() => acceptCall(call)}
-                    onReject={() => rejectCall(call.id)}
-                />
-            ))}
-
-            {/* واجهة المكالمة النشطة */}
-            {isInCall && currentCall && (
-                <SimpleVideoCall
-                    call={currentCall}
-                    onEndCall={endCall}
-                />
-            )}
+            {/* تم استبدال النظام القديم بنظام WebRTC المباشر الاحترافي */}
         </div>
     );
 }

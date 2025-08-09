@@ -42,9 +42,7 @@ import { useUserData } from '@/hooks/useUser';
 import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
-import { useSimpleCall } from '@/hooks/useSimpleCall';
-import SimpleCallNotification from '@/components/SimpleCallNotification';
-import SimpleVideoCall from '@/components/SimpleVideoCall';
+// تم استبدال النظام القديم بنظام WebRTC المباشر الاحترافي
 
 
 const menuItems = [
@@ -93,15 +91,7 @@ function TeacherLayoutContent({
   const [theme, setTheme] = React.useState('light');
   const { isMobile, setOpenMobile } = useSidebar();
 
-  // 📞 نظام المكالمات البسيط
-  const {
-    incomingCalls,
-    currentCall,
-    isInCall,
-    acceptCall,
-    rejectCall,
-    endCall
-  } = useSimpleCall();
+  // تم استبدال النظام القديم بنظام WebRTC المباشر الاحترافي
 
   // تشخيص شامل للمعلم
   React.useEffect(() => {
@@ -385,23 +375,7 @@ function TeacherLayoutContent({
           </div>
         )}
 
-        {/* إشعارات المكالمات الواردة */}
-        {incomingCalls.map((call) => (
-            <SimpleCallNotification
-                key={call.id}
-                call={call}
-                onAccept={() => acceptCall(call)}
-                onReject={() => rejectCall(call.id)}
-            />
-        ))}
-
-        {/* واجهة المكالمة النشطة */}
-        {isInCall && currentCall && (
-            <SimpleVideoCall
-                call={currentCall}
-                onEndCall={endCall}
-            />
-        )}
+        {/* تم استبدال النظام القديم بنظام WebRTC المباشر الاحترافي */}
     </>
   );
 }
