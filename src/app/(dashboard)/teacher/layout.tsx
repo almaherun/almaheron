@@ -42,11 +42,9 @@ import { useUserData } from '@/hooks/useUser';
 import { auth, db } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
-import CallDebugButton from '@/components/CallDebugButton';
-import { UnifiedCallManager } from '@/components/DailyCallManager';
-import { useUnifiedCall } from '@/hooks/useUnifiedCall';
-import UnifiedCallNotification from '@/components/DailyCallNotification';
-import AgoraVideoCall from '@/components/AgoraVideoCall';
+import { useSimpleCall } from '@/hooks/useSimpleCall';
+import SimpleCallNotification from '@/components/SimpleCallNotification';
+import SimpleVideoCall from '@/components/SimpleVideoCall';
 
 
 const menuItems = [
@@ -95,16 +93,15 @@ function TeacherLayoutContent({
   const [theme, setTheme] = React.useState('light');
   const { isMobile, setOpenMobile } = useSidebar();
 
-  // 🚀 النظام الموحد للمكالمات
+  // 📞 نظام المكالمات البسيط
   const {
-    incomingCalls: unifiedIncomingCalls,
-    acceptCall: acceptUnifiedCall,
-    rejectCall: rejectUnifiedCall,
-    currentCall: unifiedCurrentCall,
-    isInCall: isInUnifiedCall,
-    callStatus: unifiedCallStatus,
-    endCall: endUnifiedCall
-  } = useUnifiedCall();
+    incomingCalls,
+    currentCall,
+    isInCall,
+    acceptCall,
+    rejectCall,
+    endCall
+  } = useSimpleCall();
 
 
   
@@ -278,56 +275,23 @@ function TeacherLayoutContent({
             <BottomNavBar items={menuItems} />
         </SidebarInset>
 
-        {/* 🚀 النظام الموحد للمكالمات */}
-        {userData && (() => {
-          const currentUser = auth.currentUser;
-          const teacherId = currentUser?.uid || userData?.id || '';
-
-          console.log('🚀 Unified Teacher call system setup:', {
-            teacherId,
-            teacherName: userData?.name,
-            authUid: currentUser?.uid,
-            userDataId: userData?.id,
-            userData: userData
-          });
-
-          return (
-            <UnifiedCallManager
-              userId={teacherId}
-              userName={userData?.name || 'معلم'}
-              userType="teacher"
-            />
-          );
-        })()}
-
-        {/* 🚀 إشعارات المكالمات الموحدة */}
-        {unifiedIncomingCalls.map((call) => (
-            <UnifiedCallNotification
+        {/* إشعارات المكالمات الواردة */}
+        {incomingCalls.map((call) => (
+            <SimpleCallNotification
                 key={call.id}
-                callRequest={call}
-                onAccept={() => acceptUnifiedCall(call)}
-                onReject={() => rejectUnifiedCall(call.id)}
+                call={call}
+                onAccept={() => acceptCall(call)}
+                onReject={() => rejectCall(call.id)}
             />
         ))}
 
-        {/* واجهة المكالمة النشطة الموحدة */}
-        {isInUnifiedCall && unifiedCurrentCall && (
-            <div className="fixed inset-0 bg-black z-50">
-                <AgoraVideoCall
-                    channelName={unifiedCurrentCall.channelName}
-                    token={unifiedCurrentCall.token}
-                    userName={userData?.name || 'معلم'}
-                    userType="teacher"
-                    onCallEnd={endUnifiedCall}
-                    remoteUserName={unifiedCurrentCall.senderName}
-                />
-            </div>
+        {/* واجهة المكالمة النشطة */}
+        {isInCall && currentCall && (
+            <SimpleVideoCall
+                call={currentCall}
+                onEndCall={endCall}
+            />
         )}
-
-
-
-        {/* زر تشخيص المكالمات */}
-        <CallDebugButton />
     </>
   );
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, Video, BookOpen, Mic } from 'lucide-react';
+import { Search, MessageCircle, BookOpen, Star, Video } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,21 +12,18 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserData, UserData } from '@/hooks/useUser';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import AgoraCallManager, { useAgoraCallSystem } from '@/components/DailyCallManager';
-import UnifiedCallNotification from '@/components/DailyCallNotification';
-import AgoraVideoCall from '@/components/AgoraVideoCall';
-
-import CallDebugButton from '@/components/CallDebugButton';
-import { useUnifiedCall } from '@/hooks/useUnifiedCall';
-import { auth } from '@/lib/firebase';
+import { useSimpleCall } from '@/hooks/useSimpleCall';
+import SimpleCallNotification from '@/components/SimpleCallNotification';
+import SimpleVideoCall from '@/components/SimpleVideoCall';
 
 interface User extends UserData {
     uid: string;
+    id: string;
     name: string;
     email: string;
-    type: 'teacher' | 'student';
+    type: 'student' | 'teacher';
     isOnline?: boolean;
-    lastSeen?: Date;
+    lastSeen?: any;
     specialization?: string;
     rating?: number;
     studentsCount?: number;
@@ -40,73 +37,20 @@ export default function TeachersPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const { toast } = useToast();
     
-    // استخدام نظام المكالمات الجديد - تم إعادة التفعيل
-    // استخدام Firebase Auth UID للطالب (مثل المعلمين)
-    const studentAuthUid = auth.currentUser?.uid || '';
-    const studentId = student?.authUid || studentAuthUid || student?.id || '';
-    const studentName = student?.name || auth.currentUser?.displayName || 'طالب';
+    // معلومات الطالب
+    const studentName = student?.name || 'طالب';
 
-    console.log('👨‍🎓 Student call system setup:', {
-        studentId,
-        studentName,
-        studentAuthUid,
-        studentDocId: student?.id,
-        authCurrentUser: auth.currentUser?.uid,
-        student: student
-    });
-
-    // تسجيل معرف الطالب للتأكد
-    console.log('👨‍🎓 Student call system setup:', {
-        studentId: student?.id || '',
-        studentName,
-        student: student
-    });
-
-    // 🚀 النظام الموحد للمكالمات - يحل محل جميع الأنظمة الأخرى
+    // 📞 نظام المكالمات البسيط
     const {
-        startWhatsAppCall,
-        startSimpleCall,
-        startProfessionalCall,
-        acceptCall,
-        rejectCall,
-        endCall,
         incomingCalls,
+        isLoading: isCallLoading,
         currentCall,
         isInCall,
-        isLoading: isCallLoading,
-        callStatus,
-        callSystem
-    } = useUnifiedCall();
-
-    // نظام احتياطي للتوافق
-    const { startCall: startAgoraCall, cancelCall, waitingCallId } = useAgoraCallSystem(
-        studentId, // استخدام نفس الـ ID الموحد
-        studentName,
-        'student'
-    );
-
-    // حالة الانتظار خاصة بكل معلم
-    const [waitingForTeacher, setWaitingForTeacher] = useState<string | null>(null);
-    const [currentTeacherCall, setCurrentTeacherCall] = useState<{
-        teacherId: string;
-        teacherName: string;
-        teacherImage?: string;
-        callType: 'audio' | 'video';
-    } | null>(null);
-
-    // الاستماع لتغييرات حالة المكالمة لإزالة حالة الانتظار
-    useEffect(() => {
-        if (!waitingCallId) {
-            setWaitingForTeacher(null);
-            setCurrentTeacherCall(null);
-        }
-    }, [waitingCallId]);
-
-    // Check if student can make calls
-    const canMakeCalls = () => {
-        if (!student) return false;
-        return true; // مبسط للآن
-    };
+        sendCall,
+        acceptCall,
+        rejectCall,
+        endCall
+    } = useSimpleCall();
 
     // جلب قائمة المعلمين
     useEffect(() => {
@@ -129,30 +73,16 @@ export default function TeachersPage() {
                 const isOnline = lastSeen && lastSeen > fiveMinutesAgo;
 
                 // استخدام نفس المعرف الذي يستخدمه المعلم (Firebase Auth UID)
-                // إذا كان authUid متوفر، استخدمه، وإلا استخدم doc.id
                 const teacherId = data.authUid || doc.id;
-
-                console.log('👨‍🏫 Teacher data:', {
-                    docId: doc.id,
-                    authUid: data.authUid,
-                    finalTeacherId: teacherId,
-                    name: data.name
-                });
 
                 teachers.push({
                     uid: teacherId,
                     id: teacherId,
                     ...data,
-                    isOnline: isOnline || false, // افتراض أن المعلم متصل إذا كان نشطاً خلال 5 دقائق
-                    lastSeen: lastSeen
+                    isOnline,
+                    lastSeen
                 } as User);
             });
-
-            console.log('👥 Teachers loaded:', teachers.map(t => ({
-                name: t.name,
-                isOnline: t.isOnline,
-                lastSeen: t.lastSeen
-            })));
 
             setTeacherList(teachers);
             setIsLoading(false);
@@ -163,326 +93,177 @@ export default function TeachersPage() {
 
     // دالة بدء المكالمة
     const handleStartCall = async (teacher: User) => {
-        if (!student) return;
-
-        if (!canMakeCalls()) {
+        if (!teacher.isOnline) {
             toast({
-                title: "غير متاح",
-                description: "المكالمات غير متاحة حالياً",
+                title: "❌ المعلم غير متصل",
+                description: "المعلم غير متصل حالياً، جرب لاحقاً",
                 variant: "destructive"
             });
             return;
         }
 
         try {
-            console.log('🎯 Starting call to teacher:', {
-                teacherId: teacher.uid,
-                teacherName: teacher.name,
-                studentId: student?.id,
-                studentName: student?.name,
-                teacherData: {
-                    uid: teacher.uid,
-                    id: teacher.id,
-                    authUid: (teacher as any).authUid
-                }
-            });
-
-            // تعيين حالة الانتظار لهذا المعلم فقط
-            setWaitingForTeacher(teacher.uid);
-            setCurrentTeacherCall({
-                teacherId: teacher.uid,
-                teacherName: teacher.name,
-                teacherImage: (teacher as any).photoURL || (teacher as any).avatarUrl || teacher.avatarUrl || '/default-teacher.png',
-                callType: 'video'
-            });
-
-            // استخدام النظام الموحد - مكالمة احترافية
-            console.log('⭐ Starting professional call:', {
-                teacherUid: teacher.uid, // Firebase Auth UID
-                teacherName: teacher.name,
-                studentUid: auth.currentUser?.uid, // Firebase Auth UID
-                studentName: student?.name
-            });
-
-            await startProfessionalCall(teacher.uid, teacher.name, 'video');
-
-            toast({
-                title: "تم إرسال طلب المكالمة الاحترافية",
-                description: `جاري انتظار رد ${teacher.name}...`,
-                className: "bg-blue-600 text-white"
-            });
+            await sendCall(teacher.uid, teacher.name);
         } catch (error) {
-            console.error('❌ Error starting call:', error);
-            setWaitingForTeacher(null); // إزالة حالة الانتظار عند الخطأ
-            setCurrentTeacherCall(null);
-            toast({
-                title: "خطأ",
-                description: "حدث خطأ أثناء إرسال طلب المكالمة",
-                variant: "destructive"
-            });
+            console.error('Error starting call:', error);
         }
     };
 
-    // دالة مكالمة سريعة (WhatsApp style)
-    const handleQuickCall = async (teacher: User) => {
-        if (!student) return;
-
-        try {
-            setWaitingForTeacher(teacher.uid);
-
-            // استخدام Firebase Auth UID للمعلم (teacher.uid هو Firebase Auth UID)
-            console.log('🚀 Starting quick call:', {
-                teacherUid: teacher.uid, // Firebase Auth UID
-                teacherName: teacher.name,
-                studentUid: auth.currentUser?.uid, // Firebase Auth UID
-                studentName: student.name
-            });
-
-            await startWhatsAppCall(teacher.uid, teacher.name, 'video', teacher.avatarUrl);
-
-            toast({
-                title: "مكالمة سريعة",
-                description: `جاري الاتصال مع ${teacher.name}...`,
-                className: "bg-green-600 text-white"
-            });
-        } catch (error) {
-            console.error('❌ Error starting quick call:', error);
-            setWaitingForTeacher(null);
-            toast({
-                title: "خطأ",
-                description: "حدث خطأ أثناء بدء المكالمة السريعة",
-                variant: "destructive"
-            });
-        }
+    // دالة التواصل مع المعلم عبر الدردشة
+    const handleContactTeacher = (teacher: User) => {
+        toast({
+            title: "💬 التواصل مع المعلم",
+            description: `يمكنك التواصل مع ${teacher.name} عبر نظام الدردشة`,
+            className: "bg-blue-600 text-white"
+        });
     };
 
-    // دالة مكالمة بسيطة
-    const handleSimpleCall = async (teacher: User) => {
-        if (!student) return;
-
-        try {
-            setWaitingForTeacher(teacher.uid);
-
-            console.log('📱 Starting simple call:', {
-                teacherUid: teacher.uid, // Firebase Auth UID
-                teacherName: teacher.name,
-                studentUid: auth.currentUser?.uid, // Firebase Auth UID
-                studentName: student.name
-            });
-
-            await startSimpleCall(teacher.uid, teacher.name, 'video');
-
-            toast({
-                title: "طلب مكالمة",
-                description: `تم إرسال طلب مكالمة إلى ${teacher.name}`,
-                className: "bg-blue-600 text-white"
-            });
-        } catch (error) {
-            console.error('❌ Error starting simple call:', error);
-            setWaitingForTeacher(null);
-            toast({
-                title: "خطأ",
-                description: "حدث خطأ أثناء إرسال طلب المكالمة",
-                variant: "destructive"
-            });
-        }
-    };
-
-    // دالة إلغاء المكالمة
-    const handleCancelCall = async (teacherId?: string) => {
-        try {
-            await cancelCall();
-            setWaitingForTeacher(null);
-            setCurrentTeacherCall(null);
-            toast({
-                title: "تم إلغاء المكالمة",
-                description: "تم إلغاء طلب المكالمة",
-                className: "bg-gray-600 text-white"
-            });
-        } catch (error) {
-            console.error('Error canceling call:', error);
-        }
-    };
-
-    // تصفية المعلمين حسب البحث
+    // فلترة المعلمين حسب البحث
     const filteredTeachers = teacherList.filter(teacher =>
-        teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (teacher.specialization && teacher.specialization.toLowerCase().includes(searchTerm.toLowerCase()))
+        teacher.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        teacher.specialization?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (userLoading || !student) {
+    if (userLoading) {
         return (
-            <div className="space-y-6">
-                <Skeleton className="h-12 w-full" />
-                <div className="grid gap-4">
-                    {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} className="h-32 w-full" />
+            <div className="container mx-auto p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(6)].map((_, i) => (
+                        <Card key={i} className="p-6">
+                            <Skeleton className="h-20 w-20 rounded-full mx-auto mb-4" />
+                            <Skeleton className="h-4 w-3/4 mx-auto mb-2" />
+                            <Skeleton className="h-4 w-1/2 mx-auto" />
+                        </Card>
                     ))}
                 </div>
             </div>
         );
     }
 
-    if (student.type !== 'student') {
-        return (
-            <Card>
-                <CardContent className="p-6 text-center">
-                    <p className="text-red-600">هذه الصفحة مخصصة للطلاب فقط</p>
-                </CardContent>
-            </Card>
-        );
-    }
-
     return (
-        <div className="space-y-6">
-            {/* شريط البحث */}
-            <Card>
-                <CardContent className="p-4">
-                    <div className="relative">
-                        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input
-                            placeholder="ابحث عن معلم..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pr-10"
-                        />
-                    </div>
-                </CardContent>
-            </Card>
+        <div className="container mx-auto p-6 space-y-6">
+            {/* العنوان والبحث */}
+            <div className="text-center space-y-4">
+                <h1 className="text-3xl font-bold text-gray-900">
+                    🕌 معلمو تحفيظ القرآن الكريم
+                </h1>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                    اختر معلمك المفضل وابدأ رحلتك في تعلم وتحفيظ القرآن الكريم مع أفضل المعلمين المتخصصين
+                </p>
+                
+                {/* شريط البحث */}
+                <div className="relative max-w-md mx-auto">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                        placeholder="ابحث عن معلم أو تخصص..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 text-right"
+                    />
+                </div>
+            </div>
 
             {/* قائمة المعلمين */}
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {isLoading ? (
                     // Loading skeletons
-                    Array.from({ length: 3 }).map((_, index) => (
-                        <Card key={index}>
-                            <CardContent className="p-6">
-                                <div className="flex items-center space-x-4 space-x-reverse">
-                                    <Skeleton className="h-16 w-16 rounded-full" />
-                                    <div className="space-y-2 flex-1">
-                                        <Skeleton className="h-4 w-32" />
-                                        <Skeleton className="h-3 w-24" />
-                                        <Skeleton className="h-3 w-20" />
-                                    </div>
-                                    <Skeleton className="h-10 w-24" />
-                                </div>
+                    [...Array(6)].map((_, i) => (
+                        <Card key={i} className="p-6">
+                            <CardContent className="text-center space-y-4">
+                                <Skeleton className="h-20 w-20 rounded-full mx-auto" />
+                                <Skeleton className="h-4 w-3/4 mx-auto" />
+                                <Skeleton className="h-4 w-1/2 mx-auto" />
+                                <Skeleton className="h-10 w-full" />
                             </CardContent>
                         </Card>
                     ))
                 ) : filteredTeachers.length === 0 ? (
-                    <Card>
-                        <CardContent className="p-8 text-center">
-                            <p className="text-gray-500">لا توجد معلمون متاحون حالياً</p>
-                        </CardContent>
-                    </Card>
+                    <div className="col-span-full text-center py-12">
+                        <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                            لا توجد معلمين متاحين
+                        </h3>
+                        <p className="text-gray-500">
+                            {searchTerm ? 'لم يتم العثور على معلمين يطابقون بحثك' : 'لا يوجد معلمين مسجلين حالياً'}
+                        </p>
+                    </div>
                 ) : (
                     filteredTeachers.map((teacher) => (
-                        <Card key={teacher.uid} className="hover:shadow-md transition-shadow">
+                        <Card key={teacher.uid} className="hover:shadow-lg transition-shadow duration-200">
                             <CardContent className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-4 space-x-reverse">
-                                        <div className="relative">
-                                            <Avatar className="h-16 w-16">
-                                                <AvatarImage src={teacher.avatarUrl} />
-                                                <AvatarFallback className="bg-green-100 text-green-800">
-                                                    {teacher.name.charAt(0)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            {teacher.isOnline && (
-                                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-                                            )}
-                                        </div>
+                                <div className="text-center space-y-4">
+                                    {/* صورة المعلم */}
+                                    <div className="relative">
+                                        <Avatar className="h-20 w-20 mx-auto">
+                                            <AvatarImage 
+                                                src={teacher.avatarUrl || (teacher as any).photoURL} 
+                                                alt={teacher.name} 
+                                            />
+                                            <AvatarFallback className="text-lg font-semibold bg-green-100 text-green-700">
+                                                {teacher.name?.charAt(0) || 'م'}
+                                            </AvatarFallback>
+                                        </Avatar>
                                         
-                                        <div className="space-y-1">
-                                            <h3 className="font-semibold text-lg">{teacher.name}</h3>
-                                            {teacher.specialization && (
-                                                <p className="text-sm text-gray-600">{teacher.specialization}</p>
-                                            )}
-                                            <div className="flex items-center gap-2">
-                                                {teacher.rating && (
-                                                    <Badge variant="secondary" className="text-xs">
-                                                        ⭐ {teacher.rating.toFixed(1)}
-                                                    </Badge>
-                                                )}
-                                                {teacher.studentsCount && (
-                                                    <Badge variant="outline" className="text-xs">
-                                                        {teacher.studentsCount} طالب
-                                                    </Badge>
-                                                )}
-                                                <Badge 
-                                                    variant={teacher.isOnline ? "default" : "secondary"}
-                                                    className={teacher.isOnline ? "bg-green-600" : ""}
-                                                >
-                                                    {teacher.isOnline ? 'متصل' : 'غير متصل'}
-                                                </Badge>
-                                            </div>
-                                        </div>
+                                        {/* مؤشر الحالة */}
+                                        <div className={`absolute bottom-0 right-1/2 transform translate-x-1/2 translate-y-1/2 w-4 h-4 rounded-full border-2 border-white ${
+                                            teacher.isOnline ? 'bg-green-500' : 'bg-gray-400'
+                                        }`} />
                                     </div>
-                                    
-                                    <div className="flex flex-col gap-2">
-                                        {/* 🚀 مكالمة سريعة (WhatsApp Style) */}
-                                        <Button
-                                            onClick={() => handleQuickCall(teacher)}
-                                            disabled={!teacher.isOnline || isCallLoading || isInCall || waitingForTeacher === teacher.uid}
-                                            className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
-                                        >
-                                            <Video className="h-4 w-4 mr-2" />
-                                            {waitingForTeacher === teacher.uid ? 'جاري الاتصال...' : 'مكالمة سريعة'}
-                                        </Button>
 
-                                        {/* 📞 مكالمة احترافية */}
+                                    {/* معلومات المعلم */}
+                                    <div>
+                                        <h3 className="font-semibold text-lg text-gray-900 mb-1">
+                                            {teacher.name}
+                                        </h3>
+                                        
+                                        <div className="flex items-center justify-center gap-2 mb-2">
+                                            <Badge variant={teacher.isOnline ? "default" : "secondary"} className="text-xs">
+                                                {teacher.isOnline ? '🟢 متصل الآن' : '⚫ غير متصل'}
+                                            </Badge>
+                                        </div>
+
+                                        {teacher.specialization && (
+                                            <p className="text-sm text-gray-600 mb-2">
+                                                📚 {teacher.specialization}
+                                            </p>
+                                        )}
+
+                                        {teacher.rating && (
+                                            <div className="flex items-center justify-center gap-1 mb-2">
+                                                <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                                                <span className="text-sm font-medium">{teacher.rating}</span>
+                                                <span className="text-xs text-gray-500">
+                                                    ({teacher.studentsCount || 0} طالب)
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* أزرار التواصل */}
+                                    <div className="space-y-2">
+                                        {/* زر المكالمة */}
                                         <Button
                                             onClick={() => handleStartCall(teacher)}
-                                            disabled={!canMakeCalls() || waitingForTeacher === teacher.uid || isCallLoading}
-                                            className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                                            disabled={!teacher.isOnline || isCallLoading}
+                                            className="w-full bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
                                         >
                                             <Video className="h-4 w-4 mr-2" />
-                                            مكالمة احترافية
+                                            {isCallLoading ? 'جاري الاتصال...' : '📞 مكالمة فيديو'}
                                         </Button>
 
-                                        {/* 📱 مكالمة بسيطة */}
+                                        {/* زر الدردشة */}
                                         <Button
-                                            onClick={() => handleSimpleCall(teacher)}
-                                            disabled={!canMakeCalls() || waitingForTeacher === teacher.uid || isCallLoading}
+                                            onClick={() => handleContactTeacher(teacher)}
                                             variant="outline"
-                                            className="border-gray-300 hover:bg-gray-50"
+                                            className="w-full"
                                         >
-                                            <Mic className="h-4 w-4 mr-2" />
-                                            {isCallLoading ? 'جاري الاتصال...' : 'مكالمة فيديو 📹'}
+                                            <MessageCircle className="h-4 w-4 mr-2" />
+                                            💬 دردشة
                                         </Button>
 
-                                        {/* مكالمة صوتية WhatsApp Style */}
-                                        <Button
-                                            onClick={async () => {
-                                                try {
-                                                    console.log('🎙️ Starting WhatsApp audio call...');
-                                                    await startWhatsAppCall(
-                                                        teacher.uid,
-                                                        teacher.name,
-                                                        'audio',
-                                                        (teacher as any).avatar || (teacher as any).photoURL || null
-                                                    );
-                                                } catch (error) {
-                                                    console.error('❌ Error starting audio call:', error);
-                                                }
-                                            }}
-                                            disabled={!teacher.isOnline || isCallLoading || isInCall}
-                                            className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
-                                        >
-                                            <Mic className="h-4 w-4 mr-2" />
-                                            {isCallLoading ? 'جاري الاتصال...' : 'مكالمة صوتية 🎙️'}
-                                        </Button>
-
-                                        {waitingForTeacher === teacher.uid && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleCancelCall(teacher.uid)}
-                                                className="text-red-600 border-red-600 hover:bg-red-50"
-                                            >
-                                                إلغاء
-                                            </Button>
-                                        )}
+                                        <p className="text-xs text-gray-500 text-center">
+                                            {teacher.isOnline ? 'متاح للمكالمات الآن' : 'غير متصل حالياً'}
+                                        </p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -490,48 +271,38 @@ export default function TeachersPage() {
                     ))
                 )}
             </div>
-            
-            {/* نظام المكالمات - تم إعادة التفعيل */}
-            {student && (
-                <AgoraCallManager
-                    userId={student?.id || ''}
-                    userName={student?.name || 'طالب'}
-                    userType="student"
-                />
+
+            {/* رسالة ترحيبية */}
+            {!isLoading && filteredTeachers.length > 0 && (
+                <div className="text-center py-8">
+                    <div className="bg-green-50 rounded-lg p-6 max-w-2xl mx-auto">
+                        <h3 className="text-lg font-semibold text-green-800 mb-2">
+                            🌟 مرحباً بك في منصة تحفيظ القرآن الكريم
+                        </h3>
+                        <p className="text-green-700 text-sm">
+                            يمكنك الآن التواصل مع المعلمين مباشرة عبر نظام الدردشة للاستفسار عن الدروس وتحديد مواعيد الحصص
+                        </p>
+                    </div>
+                </div>
             )}
 
-
-
-
-
-            {/* 🚀 إشعارات المكالمات الموحدة */}
+            {/* إشعارات المكالمات الواردة */}
             {incomingCalls.map((call) => (
-                <UnifiedCallNotification
+                <SimpleCallNotification
                     key={call.id}
-                    callRequest={call}
+                    call={call}
                     onAccept={() => acceptCall(call)}
                     onReject={() => rejectCall(call.id)}
                 />
             ))}
 
-
-
             {/* واجهة المكالمة النشطة */}
             {isInCall && currentCall && (
-                <div className="fixed inset-0 bg-black z-50">
-                    <AgoraVideoCall
-                        channelName={currentCall.channelName}
-                        token={currentCall.token}
-                        userName={student?.name || 'طالب'}
-                        userType="student"
-                        onCallEnd={endCall}
-                        remoteUserName={currentCall.senderName}
-                    />
-                </div>
+                <SimpleVideoCall
+                    call={currentCall}
+                    onEndCall={endCall}
+                />
             )}
-
-            {/* زر تشخيص المكالمات */}
-            <CallDebugButton />
         </div>
     );
 }
