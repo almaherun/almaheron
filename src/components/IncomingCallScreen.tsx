@@ -28,12 +28,44 @@ export default function IncomingCallScreen({
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
 
+  // فحص حالة الإذن الحالية
+  const checkPermissionStatus = async () => {
+    try {
+      const permissions = await navigator.permissions.query({ name: 'camera' as PermissionName });
+      const micPermissions = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+
+      console.log('🔍 Permission status:', {
+        camera: permissions.state,
+        microphone: micPermissions.state
+      });
+
+      if (permissions.state === 'granted' && micPermissions.state === 'granted') {
+        console.log('✅ Permissions already granted');
+        setPermissionGranted(true);
+        setForceUpdate(prev => prev + 1);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.log('🔍 Permission API not supported, will use getUserMedia');
+      return false;
+    }
+  };
+
   // طلب إذن الكاميرا والميكروفون
   const requestPermissions = async () => {
     console.log('🔍 Requesting permissions...');
     setIsRequestingPermission(true);
 
     try {
+      // فحص الإذن أولاً
+      const alreadyGranted = await checkPermissionStatus();
+      if (alreadyGranted) {
+        setIsRequestingPermission(false);
+        return;
+      }
+
       console.log('📱 Calling getUserMedia...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
@@ -56,7 +88,7 @@ export default function IncomingCallScreen({
       // إضافة تأكيد بصري
       setTimeout(() => {
         alert('✅ تم منح الإذن بنجاح! يمكنك الآن قبول المكالمة.');
-      }, 100);
+      }, 500);
 
     } catch (error) {
       console.error('❌ Permission denied:', error);
@@ -74,6 +106,16 @@ export default function IncomingCallScreen({
       setPermissionGranted(false);
       setIsRequestingPermission(false);
 
+      // فحص الإذن عند ظهور المكالمة
+      checkPermissionStatus();
+
+      // فحص دوري للإذن كل ثانية
+      const permissionInterval = setInterval(async () => {
+        if (!permissionGranted) {
+          await checkPermissionStatus();
+        }
+      }, 1000);
+
       // تشغيل صوت الرنين (اختياري)
       const audio = new Audio('/sounds/quran-ringtone.mp3');
       audio.loop = true;
@@ -82,6 +124,7 @@ export default function IncomingCallScreen({
       });
 
       return () => {
+        clearInterval(permissionInterval);
         audio.pause();
         audio.currentTime = 0;
       };
@@ -90,7 +133,7 @@ export default function IncomingCallScreen({
     return () => {
       // تنظيف عند عدم الرؤية
     };
-  }, [isVisible]);
+  }, [isVisible, permissionGranted]);
 
   // مراقبة تغيير حالة الإذن
   useEffect(() => {
@@ -206,15 +249,26 @@ export default function IncomingCallScreen({
               <p className="text-white/90 text-sm mb-3">
                 🎥 يرجى السماح للكاميرا والميكروفون للمتابعة
               </p>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={requestPermissions}
-                disabled={isRequestingPermission}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-              >
-                {isRequestingPermission ? '⏳ جاري الطلب...' : '🔓 السماح للكاميرا'}
-              </motion.button>
+              <div className="space-y-2">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={requestPermissions}
+                  disabled={isRequestingPermission}
+                  className="w-full px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  {isRequestingPermission ? '⏳ جاري الطلب...' : '🔓 السماح للكاميرا'}
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={checkPermissionStatus}
+                  className="w-full px-4 py-1 bg-blue-600/50 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                >
+                  🔄 فحص الإذن مرة أخرى
+                </motion.button>
+              </div>
             </div>
           ) : (
             <div className="bg-green-500/20 backdrop-blur-sm rounded-xl p-4 mb-4 border border-green-500/30">
