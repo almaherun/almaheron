@@ -252,7 +252,25 @@ export class UnifiedAgoraCallSystem {
         style: options.callStyle,
         isDirect: options.isDirectCall,
         priority: options.priority,
-        settings: options.settings
+
+        // تفاصيل التوجيه
+        routing: {
+          senderId: callRequest.senderId,
+          senderName: callRequest.senderName,
+          senderType: callRequest.senderType,
+          receiverId: callRequest.receiverId,
+          receiverName: callRequest.receiverName,
+          studentId: callRequest.studentId,
+          teacherId: callRequest.teacherId
+        },
+
+        // تفاصيل قاعدة البيانات
+        database: {
+          collection: 'agora_call_requests',
+          documentId: docRef.id,
+          teacherShouldQuery: `teacherId == ${callRequest.teacherId}`,
+          studentShouldQuery: `studentId == ${callRequest.studentId}`
+        }
       });
 
       console.log('🎯 Call routing details:', {
@@ -348,22 +366,46 @@ export class UnifiedAgoraCallSystem {
       const unsubscribe = onSnapshot(q, (snapshot) => {
         try {
           const requests: AgoraCallRequest[] = [];
+
+          console.log(`🔍 Raw snapshot data for ${this.userType} (${this.userId}):`, {
+            snapshotSize: snapshot.size,
+            snapshotEmpty: snapshot.empty
+          });
+
           snapshot.forEach((doc) => {
             const data = doc.data();
+            console.log(`📄 Document ${doc.id}:`, {
+              studentId: data.studentId,
+              teacherId: data.teacherId,
+              senderId: data.senderId,
+              senderName: data.senderName,
+              receiverId: data.receiverId,
+              receiverName: data.receiverName,
+              status: data.status,
+              callStyle: data.callStyle
+            });
+
             requests.push({
               id: doc.id,
               ...data
             } as AgoraCallRequest);
           });
 
-          console.log(`📞 Incoming calls for ${this.userType} (${this.userId}):`, {
+          console.log(`📞 Processed calls for ${this.userType} (${this.userId}):`, {
             count: requests.length,
+            searchField: fieldToQuery,
+            searchValue: this.userId,
             requests: requests.map(r => ({
               id: r.id,
               studentId: r.studentId,
               teacherId: r.teacherId,
+              senderId: r.senderId,
+              senderName: r.senderName,
+              receiverId: r.receiverId,
+              receiverName: r.receiverName,
               from: r.senderName || (this.userType === 'teacher' ? r.studentName : r.teacherName),
               type: r.callType,
+              style: r.callStyle,
               status: r.status,
               createdAt: r.createdAt
             }))

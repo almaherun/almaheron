@@ -18,6 +18,7 @@ import AgoraVideoCall from '@/components/AgoraVideoCall';
 
 import CallDebugButton from '@/components/CallDebugButton';
 import { useUnifiedCall } from '@/hooks/useUnifiedCall';
+import { auth } from '@/lib/firebase';
 
 interface User extends UserData {
     uid: string;
@@ -40,12 +41,17 @@ export default function TeachersPage() {
     const { toast } = useToast();
     
     // استخدام نظام المكالمات الجديد - تم إعادة التفعيل
-    const studentId = student?.id || '';
-    const studentName = student?.name || 'طالب';
+    // استخدام Firebase Auth UID للطالب (مثل المعلمين)
+    const studentAuthUid = auth.currentUser?.uid || '';
+    const studentId = student?.authUid || studentAuthUid || student?.id || '';
+    const studentName = student?.name || auth.currentUser?.displayName || 'طالب';
 
     console.log('👨‍🎓 Student call system setup:', {
         studentId,
         studentName,
+        studentAuthUid,
+        studentDocId: student?.id,
+        authCurrentUser: auth.currentUser?.uid,
         student: student
     });
 
@@ -74,7 +80,7 @@ export default function TeachersPage() {
 
     // نظام احتياطي للتوافق
     const { startCall: startAgoraCall, cancelCall, waitingCallId } = useAgoraCallSystem(
-        student?.id || '',
+        studentId, // استخدام نفس الـ ID الموحد
         studentName,
         'student'
     );
@@ -191,6 +197,13 @@ export default function TeachersPage() {
             });
 
             // استخدام النظام الموحد - مكالمة احترافية
+            console.log('⭐ Starting professional call:', {
+                teacherUid: teacher.uid, // Firebase Auth UID
+                teacherName: teacher.name,
+                studentUid: auth.currentUser?.uid, // Firebase Auth UID
+                studentName: student?.name
+            });
+
             await startProfessionalCall(teacher.uid, teacher.name, 'video');
 
             toast({
@@ -216,6 +229,15 @@ export default function TeachersPage() {
 
         try {
             setWaitingForTeacher(teacher.uid);
+
+            // استخدام Firebase Auth UID للمعلم (teacher.uid هو Firebase Auth UID)
+            console.log('🚀 Starting quick call:', {
+                teacherUid: teacher.uid, // Firebase Auth UID
+                teacherName: teacher.name,
+                studentUid: auth.currentUser?.uid, // Firebase Auth UID
+                studentName: student.name
+            });
+
             await startWhatsAppCall(teacher.uid, teacher.name, 'video', teacher.avatarUrl);
 
             toast({
@@ -240,6 +262,14 @@ export default function TeachersPage() {
 
         try {
             setWaitingForTeacher(teacher.uid);
+
+            console.log('📱 Starting simple call:', {
+                teacherUid: teacher.uid, // Firebase Auth UID
+                teacherName: teacher.name,
+                studentUid: auth.currentUser?.uid, // Firebase Auth UID
+                studentName: student.name
+            });
+
             await startSimpleCall(teacher.uid, teacher.name, 'video');
 
             toast({
