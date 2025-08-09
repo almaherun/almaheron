@@ -113,22 +113,38 @@ export default function TeachersPage() {
                 teacherId: teacher.uid,
                 teacherName: teacher.name,
                 teacherAuthUid: (teacher as any).authUid,
-                teacherDocId: teacher.id
+                teacherDocId: teacher.id,
+                teacherData: teacher
             });
 
-            await sendCall(teacher.uid, teacher.name);
+            // جرب إرسال المكالمة بالمعرف الصحيح
+            const teacherIdToUse = teacher.uid; // Firebase Auth UID
+            console.log('📞 Using teacher ID:', teacherIdToUse);
+
+            await sendCall(teacherIdToUse, teacher.name);
         } catch (error) {
             console.error('Error starting call:', error);
             setCallingTeacher(null); // إزالة حالة الاتصال عند الخطأ
         }
     };
 
-    // إزالة حالة الاتصال عند انتهاء المكالمة
+    // إزالة حالة الاتصال عند انتهاء المكالمة أو بدء مكالمة جديدة
     React.useEffect(() => {
         if (!isCallLoading) {
-            setCallingTeacher(null);
+            // تأخير قصير لإزالة الحالة
+            const timer = setTimeout(() => {
+                setCallingTeacher(null);
+            }, 1000);
+            return () => clearTimeout(timer);
         }
     }, [isCallLoading]);
+
+    // إزالة حالة الاتصال عند بدء مكالمة فعلية
+    React.useEffect(() => {
+        if (isInCall) {
+            setCallingTeacher(null);
+        }
+    }, [isInCall]);
 
     // دالة التواصل مع المعلم عبر الدردشة
     const handleContactTeacher = (teacher: User) => {

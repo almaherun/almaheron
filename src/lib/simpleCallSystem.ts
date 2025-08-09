@@ -153,13 +153,16 @@ export class SimpleCallSystem {
       onSnapshot(testQuery, (testSnapshot) => {
         console.log('🧪 All pending calls in database:', {
           total: testSnapshot.size,
+          myUserId: this.userId,
+          myUserType: this.userType,
           calls: testSnapshot.docs.map(doc => ({
             id: doc.id,
             studentId: doc.data().studentId,
             teacherId: doc.data().teacherId,
             studentName: doc.data().studentName,
             teacherName: doc.data().teacherName,
-            status: doc.data().status
+            status: doc.data().status,
+            isForMe: doc.data().teacherId === this.userId || doc.data().studentId === this.userId
           }))
         });
       }, { includeMetadataChanges: false });
@@ -169,6 +172,30 @@ export class SimpleCallSystem {
         where(fieldToQuery, '==', this.userId),
         where('status', '==', 'pending')
       );
+
+      // للمعلمين: جرب أيضاً استعلام بدون فلترة المعرف لنرى جميع المكالمات
+      if (this.userType === 'teacher') {
+        const allCallsQuery = query(
+          collection(db, 'simple_calls'),
+          where('status', '==', 'pending')
+        );
+
+        onSnapshot(allCallsQuery, (allSnapshot) => {
+          console.log('🔍 All calls for teacher debugging:', {
+            teacherId: this.userId,
+            totalCalls: allSnapshot.size,
+            callsForMe: allSnapshot.docs.filter(doc => doc.data().teacherId === this.userId).length,
+            allCalls: allSnapshot.docs.map(doc => ({
+              id: doc.id,
+              teacherId: doc.data().teacherId,
+              studentId: doc.data().studentId,
+              teacherName: doc.data().teacherName,
+              studentName: doc.data().studentName,
+              isForMe: doc.data().teacherId === this.userId
+            }))
+          });
+        });
+      }
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
         console.log('🔍 Firestore snapshot received:', {

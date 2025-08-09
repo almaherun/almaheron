@@ -89,8 +89,10 @@ export function useSimpleCall() {
 
     setIsLoading(true);
     try {
+      console.log('📞 Hook sending call:', { teacherId, teacherName });
+
       const callId = await callSystemRef.current.sendCallRequest(teacherId, teacherName);
-      
+
       toast({
         title: "📞 تم إرسال طلب المكالمة",
         description: `جاري انتظار رد ${teacherName}...`,
@@ -99,6 +101,7 @@ export function useSimpleCall() {
 
       return callId;
     } catch (error: any) {
+      console.error('❌ Hook send call error:', error);
       toast({
         title: "❌ خطأ",
         description: error.message || "فشل في إرسال طلب المكالمة",

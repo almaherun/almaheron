@@ -103,6 +103,21 @@ function TeacherLayoutContent({
     endCall
   } = useSimpleCall();
 
+  // تسجيل معلومات المعلم للتشخيص
+  React.useEffect(() => {
+    if (userData) {
+      const currentUser = auth.currentUser;
+      console.log('👨‍🏫 Teacher info for call system:', {
+        userDataId: userData.id,
+        userDataAuthUid: (userData as any).authUid,
+        currentUserUid: currentUser?.uid,
+        currentUserEmail: currentUser?.email,
+        currentUserDisplayName: currentUser?.displayName,
+        userData: userData
+      });
+    }
+  }, [userData]);
+
 
   
   React.useEffect(() => {
