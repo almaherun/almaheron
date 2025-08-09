@@ -112,26 +112,31 @@ function TeacherLayoutContent({
         try {
           const { collection, query, where, getDocs } = await import('firebase/firestore');
 
-          // فحص جميع المكالمات المعلقة
+          // فحص جميع المكالمات المعلقة في النظام الجديد
           const allCallsQuery = query(
-            collection(db, 'simple_calls'),
+            collection(db, 'webrtc_calls'),
             where('status', '==', 'pending')
           );
 
           const snapshot = await getDocs(allCallsQuery);
 
-          console.log('🔍 MANUAL DATABASE CHECK:', {
+          console.log('🔍 MANUAL DATABASE CHECK (webrtc_calls):', {
             totalPendingCalls: snapshot.size,
             teacherIdToMatch: currentUser?.uid,
-            calls: snapshot.docs.map(doc => ({
-              id: doc.id,
-              teacherId: doc.data().teacherId,
-              studentId: doc.data().studentId,
-              teacherName: doc.data().teacherName,
-              studentName: doc.data().studentName,
-              status: doc.data().status,
-              '🎯 IS_FOR_ME': doc.data().teacherId === currentUser?.uid
-            }))
+            calls: snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                teacherId: data.teacherId,
+                studentId: data.studentId,
+                teacherName: data.teacherName,
+                studentName: data.studentName,
+                status: data.status,
+                '🎯 teacherId_MATCH': data.teacherId === currentUser?.uid,
+                '🎯 teacherName_MATCH': data.teacherName === 'tech',
+                '🎯 IS_FOR_ME': data.teacherId === currentUser?.uid || data.teacherName === 'tech'
+              };
+            })
           });
 
         } catch (error) {
