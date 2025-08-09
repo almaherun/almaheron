@@ -44,29 +44,60 @@ export function useUnifiedCall(): UseUnifiedCallReturn {
 
   // تهيئة نظام المكالمات
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) return;
+    const initializeCallSystem = () => {
+      const user = auth.currentUser;
+      if (!user) {
+        console.log('⚠️ No authenticated user found, waiting...');
+        return;
+      }
 
-    // تحديد نوع المستخدم من URL أو context
-    const userType = window.location.pathname.includes('/teacher') ? 'teacher' : 'student';
-    
-    console.log('🚀 Initializing Unified Call System:', {
-      userId: user.uid,
-      userType,
-      displayName: user.displayName
+      // تحديد نوع المستخدم من URL أو context
+      const userType = window.location.pathname.includes('/teacher') ? 'teacher' : 'student';
+
+      console.log('🚀 Initializing Unified Call System:', {
+        userId: user.uid,
+        userType,
+        displayName: user.displayName,
+        email: user.email
+      });
+
+      callSystemRef.current = createUnifiedAgoraCallSystem(user.uid, userType);
+    };
+
+    // جرب التهيئة فوراً
+    initializeCallSystem();
+
+    // إذا لم يكن المستخدم مسجل دخول، انتظر
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user && !callSystemRef.current) {
+        console.log('🔄 Auth state changed, initializing call system...');
+        initializeCallSystem();
+      }
     });
 
-    callSystemRef.current = createUnifiedAgoraCallSystem(user.uid, userType);
+    return () => unsubscribe();
   }, []);
 
   // الاستماع للمكالمات الواردة
   useEffect(() => {
-    if (!callSystemRef.current) return;
+    if (!callSystemRef.current) {
+      console.log('⚠️ Call system not initialized yet, skipping listener setup');
+      return;
+    }
 
     console.log('🎧 Setting up unified call listener...');
-    
+
     const unsubscribe = callSystemRef.current.listenForIncomingCalls((calls: UnifiedCallRequest[]) => {
-      console.log('📞 Received calls update:', calls);
+      console.log('📞 Received calls update:', {
+        count: calls.length,
+        calls: calls.map(c => ({
+          id: c.id,
+          from: c.senderName,
+          to: c.receiverName,
+          style: c.callStyle,
+          status: c.status
+        }))
+      });
       setIncomingCalls(calls);
       
       // إشعار بالمكالمات الجديدة

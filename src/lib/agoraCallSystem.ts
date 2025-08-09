@@ -339,8 +339,59 @@ export class UnifiedAgoraCallSystem {
     }
   }
 
+  // 🔧 دالة بديلة مبسطة للاستماع للمكالمات
+  listenForIncomingCallsSimple(callback: (requests: AgoraCallRequest[]) => void): () => void {
+    try {
+      console.log('🔧 Using simplified call listener...');
+
+      // استعلام بسيط جداً - فقط حسب المستخدم
+      const fieldToQuery = this.userType === 'teacher' ? 'teacherId' : 'studentId';
+      const simpleQuery = query(
+        collection(db, 'agora_call_requests'),
+        where(fieldToQuery, '==', this.userId)
+      );
+
+      const unsubscribe = onSnapshot(simpleQuery, (snapshot) => {
+        const allRequests: AgoraCallRequest[] = [];
+
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          allRequests.push({
+            id: doc.id,
+            ...data
+          } as AgoraCallRequest);
+        });
+
+        // فلترة المكالمات المعلقة يدوياً
+        const pendingRequests = allRequests.filter(req => req.status === 'pending');
+
+        console.log('🔧 Simplified query results:', {
+          total: allRequests.length,
+          pending: pendingRequests.length,
+          userType: this.userType,
+          userId: this.userId
+        });
+
+        callback(pendingRequests);
+      });
+
+      return unsubscribe;
+    } catch (error) {
+      console.error('❌ Error in simplified listener:', error);
+      return () => {};
+    }
+  }
+
   // الاستماع لطلبات المكالمات الواردة
   listenForIncomingCalls(callback: (requests: AgoraCallRequest[]) => void): () => void {
+    // جرب الطريقة المبسطة أولاً
+    try {
+      return this.listenForIncomingCallsSimple(callback);
+    } catch (error) {
+      console.error('❌ Simplified method failed, trying original:', error);
+    }
+
+    // الطريقة الأصلية كاحتياط
     try {
       const fieldToQuery = this.userType === 'teacher' ? 'teacherId' : 'studentId';
 
@@ -351,17 +402,44 @@ export class UnifiedAgoraCallSystem {
         queryDetails: {
           collection: 'agora_call_requests',
           where1: `${fieldToQuery} == ${this.userId}`,
-          where2: 'status == pending',
-          orderBy: 'createdAt desc'
+          where2: 'status == pending'
         }
       });
 
+      // تجربة استعلام بسيط أولاً للتأكد من وجود البيانات
+      console.log('🧪 Testing simple query first...');
+      const testQuery = query(
+        collection(db, 'agora_call_requests'),
+        where('status', '==', 'pending')
+      );
+
+      // استعلام تجريبي لمرة واحدة
+      onSnapshot(testQuery, (testSnapshot) => {
+        console.log('🧪 Test query results:', {
+          totalPendingCalls: testSnapshot.size,
+          docs: testSnapshot.docs.map(doc => ({
+            id: doc.id,
+            studentId: doc.data().studentId,
+            teacherId: doc.data().teacherId,
+            status: doc.data().status,
+            senderName: doc.data().senderName
+          }))
+        });
+      }, { includeMetadataChanges: false });
+
+      // استعلام مبسط بدون orderBy لتجنب مشكلة الفهارس
       const q = query(
         collection(db, 'agora_call_requests'),
         where(fieldToQuery, '==', this.userId),
-        where('status', '==', 'pending'),
-        orderBy('createdAt', 'desc')
+        where('status', '==', 'pending')
       );
+
+      console.log('🎯 Final query setup:', {
+        collection: 'agora_call_requests',
+        field: fieldToQuery,
+        value: this.userId,
+        status: 'pending'
+      });
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
         try {
@@ -411,14 +489,22 @@ export class UnifiedAgoraCallSystem {
             }))
           });
 
+          // ترتيب المكالمات يدوياً حسب وقت الإنشاء (الأحدث أولاً)
+          const sortedRequests = requests.sort((a, b) => {
+            const timeA = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
+            const timeB = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
+            return timeB.getTime() - timeA.getTime();
+          });
+
           // تسجيل إضافي للمقارنة
           console.log('🔍 Query details:', {
             userType: this.userType,
             userId: this.userId,
-            fieldQueried: this.userType === 'teacher' ? 'teacherId' : 'studentId'
+            fieldQueried: this.userType === 'teacher' ? 'teacherId' : 'studentId',
+            totalFound: sortedRequests.length
           });
 
-          callback(requests);
+          callback(sortedRequests);
         } catch (error) {
           console.error('Error processing incoming calls:', error);
           callback([]);
