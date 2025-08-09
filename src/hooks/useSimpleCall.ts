@@ -43,6 +43,12 @@ export function useSimpleCall() {
       if (user && !callSystemRef.current) {
         console.log('🔄 Auth state changed, initializing...');
         initializeSystem();
+
+        // إعادة تشغيل الاستماع بعد التهيئة
+        setTimeout(() => {
+          console.log('🔄 Restarting listener after auth...');
+          window.location.reload(); // إعادة تحميل لضمان إعداد الاستماع
+        }, 2000);
       }
     });
 
@@ -51,12 +57,15 @@ export function useSimpleCall() {
 
   // الاستماع للمكالمات مع إعادة المحاولة
   useEffect(() => {
-    if (!callSystemRef.current) {
-      console.log('⚠️ Call system not ready, skipping listener setup');
-      return;
-    }
+    // انتظار تهيئة النظام
+    const setupListenerWhenReady = () => {
+      if (!callSystemRef.current) {
+        console.log('⚠️ Call system not ready, retrying in 1 second...');
+        setTimeout(setupListenerWhenReady, 1000);
+        return;
+      }
 
-    console.log('🎧 Setting up call listener in hook...');
+      console.log('🎧 Setting up call listener in hook...');
 
     let retryCount = 0;
     const maxRetries = 3;
@@ -97,8 +106,12 @@ export function useSimpleCall() {
       }
     };
 
-    const unsubscribe = setupListener();
-    return unsubscribe;
+      const unsubscribe = setupListener();
+      return unsubscribe;
+    };
+
+    // بدء الإعداد
+    setupListenerWhenReady();
   }, [toast]);
 
   // إرسال مكالمة

@@ -330,9 +330,9 @@ function TeacherLayoutContent({
             <BottomNavBar items={menuItems} />
         </SidebarInset>
 
-        {/* زر اختبار للمعلم */}
+        {/* أزرار اختبار للمعلم */}
         {userData && (
-          <div className="fixed bottom-4 left-4 z-40">
+          <div className="fixed bottom-4 left-4 z-40 space-y-2">
             <button
               onClick={async () => {
                 const currentUser = auth.currentUser;
@@ -346,24 +346,41 @@ function TeacherLayoutContent({
                   );
 
                   const snapshot = await getDocs(testQuery);
+                  const myCallsData = snapshot.docs.filter(doc => doc.data().teacherId === currentUser?.uid);
+
                   console.log('🧪 MANUAL TEST RESULTS:', {
                     totalCalls: snapshot.size,
                     myId: currentUser?.uid,
-                    callsForMe: snapshot.docs.filter(doc => doc.data().teacherId === currentUser?.uid).length,
-                    allCalls: snapshot.docs.map(doc => ({
+                    callsForMe: myCallsData.length,
+                    myCalls: myCallsData.map(doc => ({
                       id: doc.id,
-                      teacherId: doc.data().teacherId,
                       studentName: doc.data().studentName,
-                      isForMe: doc.data().teacherId === currentUser?.uid
+                      teacherName: doc.data().teacherName,
+                      createdAt: doc.data().createdAt
                     }))
                   });
+
+                  // إظهار إشعار للمكالمات الموجودة
+                  if (myCallsData.length > 0) {
+                    alert(`لديك ${myCallsData.length} مكالمة معلقة!`);
+                  }
                 } catch (error) {
                   console.error('❌ Test failed:', error);
                 }
               }}
-              className="bg-red-500 text-white px-3 py-2 rounded text-sm"
+              className="bg-red-500 text-white px-3 py-2 rounded text-sm block"
             >
               🧪 Test Calls
+            </button>
+
+            <button
+              onClick={() => {
+                console.log('🔄 Force reloading page to restart listener...');
+                window.location.reload();
+              }}
+              className="bg-blue-500 text-white px-3 py-2 rounded text-sm block"
+            >
+              🔄 Restart
             </button>
           </div>
         )}
