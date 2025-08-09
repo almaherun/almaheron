@@ -118,7 +118,7 @@ export class DirectWebRTCCall {
   }
 
   // بدء المكالمة (للطالب)
-  async startCall(studentName: string, teacherName: string): Promise<void> {
+  async startCall(studentName: string, teacherName: string, teacherId?: string): Promise<void> {
     try {
       console.log('📞 Starting call...');
 
@@ -137,11 +137,11 @@ export class DirectWebRTCCall {
       const offer = await this.peerConnection.createOffer();
       await this.peerConnection.setLocalDescription(offer);
 
-      // حفظ الـ offer في Firebase
+      // حفظ الـ offer في Firebase مع معرف المعلم
       const callOffer: CallOffer = {
         id: this.callId,
         studentId: this.userId,
-        teacherId: '', // سيتم تحديده من المعلم
+        teacherId: teacherId || teacherName, // استخدام معرف المعلم أو اسمه
         studentName,
         teacherName,
         offer: offer,
@@ -150,7 +150,7 @@ export class DirectWebRTCCall {
       };
 
       await setDoc(doc(db, 'webrtc_calls', this.callId), callOffer);
-      console.log('✅ Call offer sent to Firebase');
+      console.log('✅ Call offer sent to Firebase:', callOffer);
 
       // الاستماع للـ answer
       this.listenForAnswer();

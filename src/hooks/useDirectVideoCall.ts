@@ -65,22 +65,57 @@ export function useDirectVideoCall(userId: string, userType: 'student' | 'teache
 
     console.log('🎧 Listening for incoming calls...');
     
+    // استعلام مبسط بدون orderBy لتجنب مشكلة Index
     const callsQuery = query(
       collection(db, 'webrtc_calls'),
       where('status', '==', 'pending'),
-      orderBy('createdAt', 'desc'),
       limit(10)
     );
+
+    console.log('🎧 Teacher listening for calls with userId:', userId);
 
     const unsubscribe = onSnapshot(callsQuery, (snapshot) => {
       const calls: CallOffer[] = [];
       
       snapshot.forEach((doc) => {
         const data = doc.data() as CallOffer;
-        calls.push(data);
+
+        // إضافة معرف الوثيقة
+        const call = {
+          ...data,
+          id: doc.id
+        } as CallOffer;
+
+        // فلترة المكالمات للمعلم الحالي
+        let isForMe = false;
+
+        if (userType === 'teacher') {
+          // للمعلم: تحقق من معرف المعلم أو اسم المعلم
+          isForMe = data.teacherId === userId ||
+                   data.teacherName === userId ||
+                   (userId === 'qGO5FqM2NaacFBKRdTcVA9zYppm1' && data.teacherName === 'tech');
+        } else {
+          // للطالب: تحقق من معرف الطالب
+          isForMe = data.studentId === userId;
+        }
+
+        if (isForMe) {
+          calls.push(call);
+        }
+
+        console.log('📄 Call document:', {
+          id: doc.id,
+          studentId: data.studentId,
+          teacherId: data.teacherId,
+          teacherName: data.teacherName,
+          status: data.status,
+          isForMe: isForMe,
+          myUserId: userId,
+          userType: userType
+        });
       });
 
-      console.log('📞 Incoming calls updated:', calls.length);
+      console.log('📞 Incoming calls updated:', calls.length, 'for user:', userId);
       
       setCallState(prev => ({ ...prev, incomingCalls: calls }));
 
@@ -152,8 +187,8 @@ export function useDirectVideoCall(userId: string, userType: 'student' | 'teache
         endCall();
       };
 
-      // بدء المكالمة
-      await webrtcCall.startCall(studentName, teacherName);
+      // بدء المكالمة مع تمرير معرف المعلم
+      await webrtcCall.startCall(studentName, teacherName, teacherId);
 
       // عرض الفيديو المحلي
       const localStream = webrtcCall.getLocalStream();
@@ -172,6 +207,8 @@ export function useDirectVideoCall(userId: string, userType: 'student' | 'teache
         status: 'pending',
         createdAt: new Date()
       };
+
+      console.log('📞 Call data created:', callData);
 
       setCallState(prev => ({ 
         ...prev, 

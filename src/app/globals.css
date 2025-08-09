@@ -2,8 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
-/* استيراد الثيم الإسلامي الاحترافي */
-@import url('../styles/islamic-theme.css');
+/* تم نقل الثيم الإسلامي إلى هذا الملف لتجنب مشاكل MIME */
+
+/* 🕌 نظام الألوان الإسلامي الاحترافي */
+:root {
+  --islamic-green-primary: #2E7D32;
+  --islamic-green-light: #4CAF50;
+  --islamic-gold: #FFD700;
+  --gradient-primary: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+  --shadow-lg: 0 8px 24px rgba(46, 125, 50, 0.2);
+  --transition-normal: 0.3s ease-in-out;
+}
+
+/* 🎨 كلاسات الألوان الاحترافية */
+.bg-islamic-gradient {
+  background: var(--gradient-primary);
+}
+
+.glow-islamic {
+  box-shadow: 0 0 20px rgba(46, 125, 50, 0.3);
+}
+
+/* 🎭 الحركات الاحترافية */
+.animate-pulse-islamic {
+  animation: pulseIslamic 2s infinite;
+}
+
+@keyframes pulseIslamic {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(46, 125, 50, 0);
+  }
+}
+
+/* 🎪 تأثيرات خاصة للمكالمات */
+.call-overlay {
+  background: linear-gradient(135deg, rgba(46, 125, 50, 0.9) 0%, rgba(76, 175, 80, 0.8) 100%);
+  backdrop-filter: blur(10px);
+}
 
 /* RTL Support */
 html {
