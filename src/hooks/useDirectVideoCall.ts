@@ -310,13 +310,34 @@ export function useDirectVideoCall(userId: string, userType: 'student' | 'teache
         endCall();
       };
 
-      // قبول المكالمة
-      await webrtcCall.acceptCall(userId);
+      // قبول المكالمة مع معالجة أخطاء الإذن
+      try {
+        await webrtcCall.acceptCall(userId);
 
-      // عرض الفيديو المحلي
-      const localStream = webrtcCall.getLocalStream();
-      if (localStream && localVideoRef.current) {
-        localVideoRef.current.srcObject = localStream;
+        // عرض الفيديو المحلي
+        const localStream = webrtcCall.getLocalStream();
+        if (localStream && localVideoRef.current) {
+          localVideoRef.current.srcObject = localStream;
+        }
+      } catch (permissionError: any) {
+        console.error('❌ Permission error:', permissionError);
+
+        // عرض رسالة واضحة للمستخدم
+        toast({
+          title: "🚫 مطلوب إذن الكاميرا والميكروفون",
+          description: "يرجى السماح للكاميرا والميكروفون في المتصفح ثم المحاولة مرة أخرى",
+          variant: "destructive",
+          duration: 8000,
+        });
+
+        // إعادة تعيين الحالة
+        setCallState(prev => ({
+          ...prev,
+          isConnecting: false,
+          error: permissionError.message || 'فشل في الحصول على إذن الكاميرا'
+        }));
+
+        return; // إيقاف العملية
       }
 
     } catch (error: any) {

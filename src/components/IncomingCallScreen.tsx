@@ -24,6 +24,30 @@ export default function IncomingCallScreen({
   isVisible
 }: IncomingCallScreenProps) {
   const [isRinging, setIsRinging] = useState(true);
+  const [permissionGranted, setPermissionGranted] = useState(false);
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+
+  // طلب إذن الكاميرا والميكروفون
+  const requestPermissions = async () => {
+    setIsRequestingPermission(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      });
+
+      // إيقاف المسارات فوراً (نحن نريد الإذن فقط)
+      stream.getTracks().forEach(track => track.stop());
+
+      setPermissionGranted(true);
+      console.log('✅ Camera and microphone permissions granted');
+    } catch (error) {
+      console.error('❌ Permission denied:', error);
+      alert('يرجى السماح للكاميرا والميكروفون في المتصفح للمتابعة');
+    } finally {
+      setIsRequestingPermission(false);
+    }
+  };
 
   useEffect(() => {
     if (isVisible) {
@@ -131,6 +155,31 @@ export default function IncomingCallScreen({
           </div>
         </motion.div>
 
+        {/* Permission Request */}
+        {!permissionGranted && (
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-center mb-8"
+          >
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-4">
+              <p className="text-white/90 text-sm mb-3">
+                🎥 يرجى السماح للكاميرا والميكروفون للمتابعة
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={requestPermissions}
+                disabled={isRequestingPermission}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+              >
+                {isRequestingPermission ? '⏳ جاري الطلب...' : '🔓 السماح للكاميرا'}
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+
         {/* Call Actions */}
         <motion.div
           initial={{ y: 50, opacity: 0 }}
@@ -150,20 +199,30 @@ export default function IncomingCallScreen({
 
           {/* Accept Audio Button */}
           <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onAcceptAudio}
-            className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-600 transition-colors"
+            whileHover={{ scale: permissionGranted ? 1.1 : 1 }}
+            whileTap={{ scale: permissionGranted ? 0.95 : 1 }}
+            onClick={permissionGranted ? onAcceptAudio : requestPermissions}
+            disabled={!permissionGranted}
+            className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+              permissionGranted
+                ? 'bg-blue-500 hover:bg-blue-600'
+                : 'bg-gray-500 opacity-50 cursor-not-allowed'
+            }`}
           >
             <Phone className="w-8 h-8 text-white" />
           </motion.button>
 
           {/* Accept Video Button */}
           <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onAcceptVideo}
-            className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 transition-colors glow-islamic"
+            whileHover={{ scale: permissionGranted ? 1.1 : 1 }}
+            whileTap={{ scale: permissionGranted ? 0.95 : 1 }}
+            onClick={permissionGranted ? onAcceptVideo : requestPermissions}
+            disabled={!permissionGranted}
+            className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+              permissionGranted
+                ? 'bg-green-500 hover:bg-green-600 glow-islamic'
+                : 'bg-gray-500 opacity-50 cursor-not-allowed'
+            }`}
           >
             <Video className="w-8 h-8 text-white" />
           </motion.button>
@@ -177,8 +236,12 @@ export default function IncomingCallScreen({
           className="flex items-center justify-center gap-8 mt-4"
         >
           <span className="text-white/60 text-sm w-16 text-center">رفض</span>
-          <span className="text-white/60 text-sm w-16 text-center">صوتي</span>
-          <span className="text-white/60 text-sm w-16 text-center">فيديو</span>
+          <span className={`text-sm w-16 text-center ${permissionGranted ? 'text-white/60' : 'text-gray-400'}`}>
+            {permissionGranted ? 'صوتي' : 'مقفل'}
+          </span>
+          <span className={`text-sm w-16 text-center ${permissionGranted ? 'text-white/60' : 'text-gray-400'}`}>
+            {permissionGranted ? 'فيديو' : 'مقفل'}
+          </span>
         </motion.div>
 
         {/* Islamic Pattern Decoration */}
