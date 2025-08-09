@@ -65,19 +65,47 @@ export function useSimpleCall() {
           calls: calls.map(c => ({
             id: c.id,
             from: c.studentName,
-            to: c.teacherName
+            to: c.teacherName,
+            status: c.status
           }))
         });
 
-        setIncomingCalls(calls);
-        
-        if (calls.length > 0) {
-          const latestCall = calls[0];
-          toast({
-            title: "📞 مكالمة واردة",
-            description: `مكالمة من ${latestCall.studentName}`,
-            duration: 10000,
-          });
+        // فصل المكالمات حسب الحالة
+        const pendingCalls = calls.filter(call => call.status === 'pending');
+        const acceptedCalls = calls.filter(call => call.status === 'accepted');
+
+        // للمعلمين: إظهار المكالمات المعلقة
+        if (window.location.pathname.includes('/teacher')) {
+          setIncomingCalls(pendingCalls);
+
+          if (pendingCalls.length > 0) {
+            const latestCall = pendingCalls[0];
+            toast({
+              title: "📞 مكالمة واردة",
+              description: `مكالمة من ${latestCall.studentName}`,
+              duration: 10000,
+            });
+          }
+        }
+
+        // للطلاب: التحقق من المكالمات المقبولة
+        if (window.location.pathname.includes('/student')) {
+          if (acceptedCalls.length > 0) {
+            const acceptedCall = acceptedCalls[0];
+            console.log('✅ Student: Call was accepted, starting video call...');
+
+            setCurrentCall(acceptedCall);
+            setIsInCall(true);
+            setIncomingCalls([]);
+
+            toast({
+              title: "✅ تم قبول المكالمة",
+              description: `بدء المكالمة مع ${acceptedCall.teacherName}`,
+              className: "bg-green-600 text-white"
+            });
+          } else {
+            setIncomingCalls(pendingCalls);
+          }
         }
       });
 

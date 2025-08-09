@@ -111,24 +111,28 @@ export class SimpleCallSystem {
   // قبول المكالمة
   async acceptCall(callId: string): Promise<{ channelName: string }> {
     try {
+      console.log('✅ Accepting call:', callId);
+
       await updateDoc(doc(db, 'simple_calls', callId), {
         status: 'accepted'
       });
 
       // الحصول على معلومات المكالمة
-      const callDoc = await import('firebase/firestore').then(({ getDoc }) => 
+      const callDoc = await import('firebase/firestore').then(({ getDoc }) =>
         getDoc(doc(db, 'simple_calls', callId))
       );
-      
+
       if (!callDoc.exists()) {
         throw new Error('المكالمة غير موجودة');
       }
 
       const callData = callDoc.data() as SimpleCallRequest;
-      
-      console.log('✅ Call accepted:', {
+
+      console.log('✅ Call accepted successfully:', {
         id: callId,
-        channel: callData.channelName
+        channel: callData.channelName,
+        studentId: callData.studentId,
+        teacherId: callData.teacherId
       });
 
       return { channelName: callData.channelName };
@@ -228,7 +232,8 @@ export class SimpleCallSystem {
           myCalls: myCalls.map(c => ({
             id: c.id,
             from: c.studentName,
-            to: c.teacherName
+            to: c.teacherName,
+            status: c.status
           }))
         });
 
@@ -242,6 +247,37 @@ export class SimpleCallSystem {
         }, 3000);
         callback([]);
       });
+
+      // للطلاب: استمع أيضاً للمكالمات المقبولة
+      if (this.userType === 'student') {
+        const acceptedCallsQuery = query(
+          collection(db, 'simple_calls'),
+          where('studentId', '==', this.userId),
+          where('status', '==', 'accepted')
+        );
+
+        onSnapshot(acceptedCallsQuery, (snapshot) => {
+          console.log('📞 Student checking for accepted calls:', snapshot.size);
+
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            console.log('✅ Found accepted call for student:', {
+              id: doc.id,
+              status: data.status,
+              channelName: data.channelName
+            });
+
+            // إشعار الطالب بقبول المكالمة
+            const acceptedCall = {
+              id: doc.id,
+              ...data
+            } as SimpleCallRequest;
+
+            // استدعاء callback مع المكالمة المقبولة
+            callback([acceptedCall]);
+          });
+        });
+      }
 
       return unsubscribe;
     } catch (error) {

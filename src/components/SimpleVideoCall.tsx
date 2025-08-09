@@ -38,13 +38,32 @@ export default function SimpleVideoCall({ call, onEndCall }: SimpleVideoCallProp
 
   const initializeCall = async () => {
     try {
+      console.log('🎥 Starting call initialization...');
+
+      // طلب إذن الكاميرا والميكروفون أولاً
+      try {
+        console.log('🎤 Requesting camera and microphone permissions...');
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        });
+        console.log('✅ Permissions granted');
+        // إغلاق الـ stream المؤقت
+        stream.getTracks().forEach(track => track.stop());
+      } catch (permissionError) {
+        console.error('❌ Permission denied:', permissionError);
+        alert('يرجى السماح للكاميرا والميكروفون للمتابعة');
+        return;
+      }
+
       // تحميل Agora SDK
       if (!window.AgoraRTC) {
+        console.log('📦 Loading Agora SDK...');
         await loadAgoraSDK();
       }
 
       const AgoraRTC = window.AgoraRTC;
-      
+
       // إنشاء العميل
       const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
       clientRef.current = client;
@@ -55,27 +74,32 @@ export default function SimpleVideoCall({ call, onEndCall }: SimpleVideoCallProp
 
       // الانضمام للقناة
       const appId = 'cb27c3ffa8e9410db064c2006c934df1';
+      console.log('🔗 Joining channel:', call.channelName);
       await client.join(appId, call.channelName, null, null);
 
       // إنشاء المسارات المحلية
+      console.log('🎥 Creating camera and microphone tracks...');
       const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
       localTracksRef.current = [audioTrack, videoTrack];
 
       // عرض الفيديو المحلي
       if (localVideoRef.current) {
+        console.log('📺 Playing local video...');
         videoTrack.play(localVideoRef.current);
       }
 
       // نشر المسارات
+      console.log('📡 Publishing tracks...');
       await client.publish([audioTrack, videoTrack]);
 
       setIsLoading(false);
       setIsConnected(true);
 
-      console.log('✅ Call connected:', call.channelName);
+      console.log('✅ Call connected successfully:', call.channelName);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error initializing call:', error);
+      alert('حدث خطأ في بدء المكالمة: ' + (error?.message || 'خطأ غير معروف'));
       setIsLoading(false);
     }
   };
